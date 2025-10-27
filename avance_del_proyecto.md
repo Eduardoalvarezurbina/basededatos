@@ -6,7 +6,7 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
 
 ### 1. Base de Datos (PostgreSQL)
 
-**Progreso: 90%**
+**Progreso: 95%**
 
 -   **Completado:**
     -   Diseño y creación del esquema inicial (productos, clientes, ventas, etc.).
@@ -17,6 +17,7 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
     -   Tablas para el flujo de compras (`Compras`, `Detalle_Compras`, `Proveedores`).
     -   Historial de precios y costos para análisis de rentabilidad.
     -   Sistema de migraciones numeradas para control de versiones.
+    -   Inserción de datos de prueba (proveedores, inventario, compras, pedidos/ventas, reclamos, ciudades, puntos de venta).
 
 -   **Pendiente:**
     -   Posibles ajustes para el **Módulo de Reclamos**.
