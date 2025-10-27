@@ -25,7 +25,7 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
 
 ### 2. Backend (Node.js)
 
-**Progreso: 50%**
+**Progreso: 60%**
 
 -   **Completado:**
     -   Endpoints para la gestión de **Proveedores** (crear y listar).
@@ -44,10 +44,11 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
 
 ### 3. Frontend (React)
 
-**Progreso: 50%**
+**Progreso: 60%**
 
 -   **Completado:**
     -   Interfaz para la **Gestión de Proveedores** (crear y listar).
+    -   Interfaz para la **Gestión de Compras** (historial y registro).
     -   Estructura de navegación principal (`AdminDashboard`).
     -   Servicio centralizado para la comunicación con el backend (`apiService.js`).
     -   Interfaz para el flujo de **Producción** (`ProduccionDiaria.js`).
@@ -55,7 +56,6 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
     -   Interfaz para **Gestionar Pedidos** y convertirlos en ventas (`PedidosManagement.js`).
 
 -   **Pendiente:**
-    -   Crear la interfaz de usuario para el **Registro de Compras**.
     -   Crear la interfaz para el **Módulo de Reclamos**.
     -   Mejorar la vista de **Gestión de Clientes**.
     -   Implementar el ruteo protegido (`react-router-dom`).

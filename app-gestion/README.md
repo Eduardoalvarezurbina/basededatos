@@ -41,8 +41,8 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
     *   **CONTEXTO:** Se implementó el flujo de producción en dos pasos (iniciar y finalizar jornada) tanto en el backend como en el frontend (`ProduccionDiaria.js`).
 
 *   **Paso 2.2: Módulo de Compras:**
-    *   **ESTADO:** PENDIENTE.
-    *   **CONTEXTO:** Falta crear la interfaz para ver el historial de compras y registrar nuevas.
+    *   **ESTADO:** HECHO.
+    *   **CONTEXTO:** Se implementó la gestión de proveedores (creación y listado) y la interfaz para el registro de nuevas compras, incluyendo la selección de proveedor, productos, cantidades y cálculo automático de totales. También se añadió la visualización del historial de compras.
 
 *   **Paso 2.3: Módulo de Pedidos y Ventas:**
     *   **ESTADO:** HECHO.
@@ -123,5 +123,17 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
 - **Acciones:**
     1.  Se modificó el endpoint `GET /procesos` para que acepte un parámetro de consulta `tipo` (ej. `/procesos?tipo=PRODUCCION`).
     2.  Si se proporciona el parámetro `tipo`, la consulta SQL filtra los resultados por la columna `tipo_proceso` de la tabla `Procesos`.
+
+### Módulo de Compras: Gestión de Proveedores y Registro de Compras
+- **Propósito:** Permitir el registro y seguimiento de las compras de insumos y productos, así como la gestión de proveedores.
+- **Componentes y Lógica:**
+    1.  **Backend:**
+        *   Se añadieron endpoints `GET /proveedores` y `POST /proveedores` para la gestión de proveedores.
+        *   Se implementaron endpoints `GET /compras` y `POST /compras` para listar y registrar compras, incluyendo la actualización automática del inventario.
+    2.  **Frontend:**
+        *   Se creó el componente `ProveedoresManagement.js` para listar y crear proveedores.
+        *   Se creó el componente `ComprasManagement.js` para visualizar el historial de compras y registrar nuevas, con selección de proveedor, productos, cantidades y cálculo de totales.
+        *   Se actualizaron `apiService.js` con las funciones `getProveedores`, `createProveedor`, `getCompras` y `createCompra`.
+        *   Se integraron ambos componentes en el `AdminDashboard.js` para su navegación.
 
 (Y así sucesivamente con el resto de funcionalidades...)
