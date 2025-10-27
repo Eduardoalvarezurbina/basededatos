@@ -25,7 +25,7 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
 
 ### 2. Backend (Node.js)
 
-**Progreso: 80%**
+**Progreso: 90%**
 
 -   **Completado:**
     -   Endpoints para la gestión de **Proveedores** (crear y listar).
@@ -36,16 +36,16 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
     -   Lógica de negocio para descuento de inventario basado en procesos.
     -   Mejora del endpoint `GET /clients` para incluir tipo de cliente y fuente de contacto.
     -   Endpoints para la **Gestión de Reclamos** (CRUD completo).
+    -   Integración de la gestión de tokens y roles básicos para autenticación.
 
 -   **Pendiente:**
-    -   Implementar la autenticación de usuarios (login) y gestión de tokens.
     -   Implementar la lógica de autorización basada en roles.
 
 ---
 
 ### 3. Frontend (React)
 
-**Progreso: 80%**
+**Progreso: 90%**
 
 -   **Completado:**
     -   Interfaz para la **Gestión de Proveedores** (crear y listar).
@@ -57,9 +57,9 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
     -   Interfaz para el flujo de **Producción** (`ProduccionDiaria.js`).
     -   Interfaz para **Agendar Pedidos** (`PedidoForm.js`).
     -   Interfaz para **Gestionar Pedidos** y convertirlos en ventas (`PedidosManagement.js`).
+    -   Implementación del ruteo protegido con `react-router-dom`.
 
 -   **Pendiente:**
-    -   Implementar el ruteo protegido (`react-router-dom`).
     -   Implementar la lógica para mostrar/ocultar vistas según el rol del usuario.
 
 ---
