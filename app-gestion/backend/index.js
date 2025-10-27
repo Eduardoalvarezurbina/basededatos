@@ -1168,10 +1168,19 @@ app.post('/ventas', async (req, res) => {
 
 app.get('/clients', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM Clientes ORDER BY id_cliente');
+    const result = await pool.query(`
+      SELECT
+        c.*,
+        tc.nombre_tipo as nombre_tipo_cliente,
+        fc.nombre_fuente as nombre_fuente_contacto
+      FROM Clientes c
+      LEFT JOIN Tipos_Cliente tc ON c.id_tipo_cliente = tc.id_tipo_cliente
+      LEFT JOIN Fuentes_Contacto fc ON c.id_fuente_contacto = fc.id_fuente_contacto
+      ORDER BY c.id_cliente
+    `);
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error('Error getting clients:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
