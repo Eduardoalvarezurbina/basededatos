@@ -25,7 +25,7 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
 
 ### 2. Backend (Node.js)
 
-**Progreso: 70%**
+**Progreso: 80%**
 
 -   **Completado:**
     -   Endpoints para la gestión de **Proveedores** (crear y listar).
@@ -35,9 +35,9 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
     -   Endpoints de utilidad (búsqueda de clientes, listas de formatos, etc.).
     -   Lógica de negocio para descuento de inventario basado en procesos.
     -   Mejora del endpoint `GET /clients` para incluir tipo de cliente y fuente de contacto.
+    -   Endpoints para la **Gestión de Reclamos** (CRUD completo).
 
 -   **Pendiente:**
-    -   Desarrollar los endpoints para el **Módulo de Reclamos**.
     -   Implementar la autenticación de usuarios (login) y gestión de tokens.
     -   Implementar la lógica de autorización basada en roles.
 
@@ -45,12 +45,13 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
 
 ### 3. Frontend (React)
 
-**Progreso: 70%**
+**Progreso: 80%**
 
 -   **Completado:**
     -   Interfaz para la **Gestión de Proveedores** (crear y listar).
     -   Interfaz para la **Gestión de Compras** (historial y registro).
     -   Interfaz mejorada para la **Gestión de Clientes** (CRUD completo y más detalles).
+    -   Interfaz para la **Gestión de Reclamos** (CRUD completo).
     -   Estructura de navegación principal (`AdminDashboard`).
     -   Servicio centralizado para la comunicación con el backend (`apiService.js`).
     -   Interfaz para el flujo de **Producción** (`ProduccionDiaria.js`).
@@ -58,7 +59,6 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
     -   Interfaz para **Gestionar Pedidos** y convertirlos en ventas (`PedidosManagement.js`).
 
 -   **Pendiente:**
-    -   Crear la interfaz para el **Módulo de Reclamos**.
     -   Implementar el ruteo protegido (`react-router-dom`).
     -   Implementar la lógica para mostrar/ocultar vistas según el rol del usuario.
 

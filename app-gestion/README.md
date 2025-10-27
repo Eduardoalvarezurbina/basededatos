@@ -53,8 +53,8 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
     *   **CONTEXTO:** Falta mejorar la vista de clientes para mostrar toda su información y permitir la edición.
 
 *   **Paso 2.5: Módulo de Reclamos:**
-    *   **ESTADO:** PENDIENTE.
-    *   **CONTEXTO:** Falta crear la interfaz para gestionar los reclamos.
+    *   **ESTADO:** HECHO.
+    *   **CONTEXTO:** Se implementó la gestión completa de reclamos, incluyendo la visualización del historial, registro de nuevos reclamos asociados a clientes y ventas, y la capacidad de actualizar su estado y solución.
 
 ### **Fase 3: Autenticación y Vistas por Rol**
 
@@ -135,5 +135,16 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
         *   Se creó el componente `ComprasManagement.js` para visualizar el historial de compras y registrar nuevas, con selección de proveedor, productos, cantidades y cálculo de totales.
         *   Se actualizaron `apiService.js` con las funciones `getProveedores`, `createProveedor`, `getCompras` y `createCompra`.
         *   Se integraron ambos componentes en el `AdminDashboard.js` para su navegación.
+
+### Módulo de Reclamos: Gestión Completa
+- **Propósito:** Permitir el registro, seguimiento y resolución de reclamos de clientes, asociándolos a clientes y ventas específicas.
+- **Componentes y Lógica:**
+    1.  **Backend:**
+        *   Endpoints `GET /reclamos`, `POST /reclamos`, `PUT /reclamos/:id`, `DELETE /reclamos/:id` ya existentes y utilizados.
+        *   El endpoint `GET /reclamos` se asegura de incluir el nombre del cliente asociado.
+    2.  **Frontend:**
+        *   Se creó el componente `ReclamosManagement.js` para visualizar el historial de reclamos, registrar nuevos, y actualizar su estado y solución.
+        *   Se actualizó `apiService.js` con las funciones `getReclamos`, `createReclamo`, `updateReclamo` y `deleteReclamo`.
+        *   Se integró el componente `ReclamosManagement.js` en el `AdminDashboard.js` para su navegación.
 
 (Y así sucesivamente con el resto de funcionalidades...)
