@@ -1,0 +1,18 @@
+Stock Envasado,Mostrar,Frambuesa entera,Arándano,Frutilla,Mora,Mix de berries,Crumble,Mango,Piña,Maracuya con pepa,Maracuya sin pepa,Empanada queso normal,Melón Tuna,Pulpa frambuesa,Pulpa frutilla,Pulpa Piña,Pulpa Mango,Pulpa Chirimoya,Pulpa Lúcuma,Jugo de Limón,Sopaipilla Normal ,Sopaipilla Coctel,Empanada  queso coctel,Pasta de choclo
+Ingreso,No,4967,1422,984,410,1002,983,297,311,135,137,222,10,143,101,95,83,10,44,163,42,26,0,0
+Salida,No,4878,1395,960,388,980,914,309,308,79,99,222,15,111,101,95,60,4,19,148,42,26,0,0
+Total Envasado,Si,89,27,24,22,22,69,-12,3,56,38,0,-5,32,0,0,23,6,25,15,0,0,0,0
+
+
+
+Stock Granel,Mostrar,Frambuesa entera,Arándano,Frutilla,Mora,Mix de berries,Crumble,Mango,Piña,Maracuya con pepa,Maracuya sin pepa,Empanada queso normal,Melón Tuna,Pulpa frambuesa,Pulpa frutilla,Pulpa Piña,Pulpa Mango,Pulpa Chirimoya,Pulpa Lúcuma,Jugo de Limón,Sopaipilla Normal ,Sopaipilla Coctel,Empanada  queso coctel,Pasta de choclo
+Cuadratura 01-06,No,9691,3075,2022,1262,341,1050,88,89,,,,,,,,,,,,,,,
+Ingreso,No,10,121,189,0,1100,127,530,468,0,0,0,60,0,0,0,0,0,0,0,0,0,0,0
+Salida,No,8511,2392,1587,794,1397,1002,458,457,0,0,0,35,0,0,0,0,0,0,0,3,0,0,0
+Total  stock granel,Si,915,529,349,193,44,175,160,100,0,0,0,25,0,0,0,0,0,0,0,-3,0,0,0
+
+
+Stock IVA,Mostrar,Frambuesa entera,Arándano,Frutilla,Mora,Mix de berries,Crumble,Mango,Piña,Maracuya con pepa,Maracuya sin pepa,Empanada queso normal,Melón Tuna,Pulpa frambuesa,Pulpa frutilla,Pulpa Piña,Pulpa Mango,Pulpa Chirimoya,Pulpa Lúcuma,Jugo de Limón,Sopaipilla Normal ,Sopaipilla Coctel,Empanada  queso coctel,Pasta de choclo
+Ingreso ,No,0,0,0,0,0,0,220,122,0,24,0,0,12,24,0,0,0,0,120,0,0,0,0
+Salida,No,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+Total stock contable,Si,0,0,0,0,0,0,220,122,0,24,0,0,12,24,0,0,0,0,120,0,0,0,0
