@@ -162,4 +162,19 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
         *   El endpoint `/login` se encarga de la autenticación y devuelve el rol del usuario.
         *   `apiService.js` se actualizó para manejar la obtención de ventas (`getVentas`).
 
+### Fase 3: Autenticación y Ruteo Protegido
+- **Propósito:** Implementar un sistema de autenticación y gestión de rutas para asegurar el acceso a las diferentes secciones de la aplicación.
+- **Componentes y Lógica:**
+    1.  **Frontend:**
+        *   Se instaló `react-router-dom` para la gestión de rutas.
+        *   Se creó `AuthContext.js` para manejar el estado de autenticación global (usuario, rol, token).
+        *   Se creó `PrivateRoute.js` para proteger rutas, redirigiendo a la página de login si el usuario no está autenticado o no tiene el rol requerido.
+        *   Se refactorizó `LoginPage.js` para usar `AuthContext` y `useNavigate` para redirigir tras el login.
+        *   Se refactorizó `App.js` para configurar `react-router-dom`, envolver la aplicación con `AuthProvider` y definir las rutas públicas y protegidas.
+        *   Se refactorizó `AdminDashboard.js` para usar `Link` y `Outlet` de `react-router-dom` para la navegación y renderizado de sub-rutas.
+        *   Se refactorizó `WorkerDashboard.js` para usar `apiService.js` y `AuthContext`.
+    2.  **Backend:**
+        *   El endpoint `/login` se encarga de la autenticación y devuelve el rol del usuario.
+        *   `apiService.js` se actualizó para manejar la obtención de ventas (`getVentas`).
+
 (Y así sucesivamente con el resto de funcionalidades...)
