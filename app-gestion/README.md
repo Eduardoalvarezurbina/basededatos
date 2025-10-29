@@ -72,6 +72,12 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
 
 ## 3. Historial de Cambios Detallado
 
+### Base de Datos: Adición de Restricciones y Columnas
+- **Propósito:** Mejorar la integridad de los datos y la funcionalidad de los pedidos.
+- **Acciones:**
+    1.  Se añadió una restricción única a la tabla `Inventario` en las columnas `id_formato_producto` y `id_ubicacion` (Migración 025).
+    2.  Se añadió la columna `con_factura` (BOOLEAN DEFAULT FALSE) a la tabla `Pedidos` (Migración 026).
+
 ### Backend: Creación Masiva de Lotes por Rango
 - **Propósito:** Reflejar el proceso de producción real, donde un trabajador registra un rango de etiquetas.
 - **Creación:** Se añadió un endpoint `POST /lotes/rango` (posteriormente reemplazado).
@@ -146,21 +152,6 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
         *   Se creó el componente `ReclamosManagement.js` para visualizar el historial de reclamos, registrar nuevos, y actualizar su estado y solución.
         *   Se actualizó `apiService.js` con las funciones `getReclamos`, `createReclamo`, `updateReclamo` y `deleteReclamo`.
         *   Se integró el componente `ReclamosManagement.js` en el `AdminDashboard.js` para su navegación.
-
-### Fase 3: Autenticación y Ruteo Protegido
-- **Propósito:** Implementar un sistema de autenticación y gestión de rutas para asegurar el acceso a las diferentes secciones de la aplicación.
-- **Componentes y Lógica:**
-    1.  **Frontend:**
-        *   Se instaló `react-router-dom` para la gestión de rutas.
-        *   Se creó `AuthContext.js` para manejar el estado de autenticación global (usuario, rol, token).
-        *   Se creó `PrivateRoute.js` para proteger rutas, redirigiendo a la página de login si el usuario no está autenticado o no tiene el rol requerido.
-        *   Se refactorizó `LoginPage.js` para usar `AuthContext` y `useNavigate` para redirigir tras el login.
-        *   Se refactorizó `App.js` para configurar `react-router-dom`, envolver la aplicación con `AuthProvider` y definir las rutas públicas y protegidas.
-        *   Se refactorizó `AdminDashboard.js` para usar `Link` y `Outlet` de `react-router-dom` para la navegación y renderizado de sub-rutas.
-        *   Se refactorizó `WorkerDashboard.js` para usar `apiService.js` y `AuthContext`.
-    2.  **Backend:**
-        *   El endpoint `/login` se encarga de la autenticación y devuelve el rol del usuario.
-        *   `apiService.js` se actualizó para manejar la obtención de ventas (`getVentas`).
 
 ### Fase 3: Autenticación y Ruteo Protegido
 - **Propósito:** Implementar un sistema de autenticación y gestión de rutas para asegurar el acceso a las diferentes secciones de la aplicación.

@@ -95,6 +95,7 @@ erDiagram
         INT id_cliente FK
         VARCHAR estado
         DATE fecha
+        BOOLEAN con_factura
     }
     Detalle_Pedidos {
         INT id_detalle_pedido PK
@@ -122,6 +123,7 @@ erDiagram
         INT etiqueta_inicial
         INT etiqueta_final
         VARCHAR estado
+        INT id_proceso FK
     }
 
     Clientes ||--o{ Ventas : "realiza"
@@ -166,3 +168,8 @@ La base de datos se construyó y evolucionó a través de los siguientes scripts
 - `019_fix_detalle_pedidos.sql`: Corrige la tabla `Detalle_Pedidos` para un mejor diseño.
 - `020_remove_canal_from_clientes.sql`: Elimina una columna redundante de la tabla Clientes.
 - `021_create_produccion_diaria_table.sql`: Crea la tabla para manejar el flujo de producción en dos pasos.
+- `022_add_fields_to_produccion_diaria.sql`: Añade campos para registrar `hora_inicio`, `hora_finalizacion` y `etiquetas_defectuosas` a `Produccion_Diaria`.
+- `023_rename_recetas_to_procesos.sql`: Renombra las tablas `Recetas` a `Procesos` y `Detalle_Recetas` a `Detalle_Procesos`, y añade `tipo_proceso` a `Procesos`.
+- `024_add_proceso_to_produccion_diaria.sql`: Añade la columna `id_proceso` a `Produccion_Diaria` y establece la clave foránea a `Procesos(id_proceso)`.
+- `025_add_unique_constraint_to_inventario.sql`: Añade una restricción única a la tabla `Inventario` en las columnas `id_formato_producto` y `id_ubicacion`.
+- `026_add_con_factura_to_pedidos.sql`: Añade la columna `con_factura` (BOOLEAN DEFAULT FALSE) a la tabla `Pedidos`.
