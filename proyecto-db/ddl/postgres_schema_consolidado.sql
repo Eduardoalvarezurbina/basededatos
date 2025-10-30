@@ -1,10 +1,11 @@
 -- =====================================================================
--- Script DDL Consolidado para PostgreSQL (Versión 3 - Corregida)
--- Generado a partir de todos los scripts de migración, con orden de dependencia corregido.
+-- Script DDL Consolidado para PostgreSQL (Versión Final y Consolidada)
+-- Este script representa el estado final y completo del esquema de la base de datos.
+-- Todas las columnas y restricciones están definidas directamente en sus tablas.
 -- =====================================================================
 
 -- -----------------------------------------------------
--- Tablas de Catálogo/Lookup (Sin dependencias externas)
+-- Tablas de Catálogo/Lookup
 -- -----------------------------------------------------
 
 CREATE TABLE IF NOT EXISTS Ciudades (
@@ -37,11 +38,6 @@ CREATE TABLE IF NOT EXISTS Regiones (
     nombre_region VARCHAR(100) NOT NULL UNIQUE
 );
 
-CREATE TABLE IF NOT EXISTS Canales_Compra (
-    id_canal_compra SERIAL PRIMARY KEY,
-    nombre_canal VARCHAR(100) NOT NULL UNIQUE
-);
-
 CREATE TABLE IF NOT EXISTS Frecuencias_Compra (
     id_frecuencia_compra SERIAL PRIMARY KEY,
     nombre_frecuencia VARCHAR(50) NOT NULL UNIQUE
@@ -61,7 +57,8 @@ CREATE TABLE IF NOT EXISTS Productos (
     id_producto SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     categoria VARCHAR(50),
-    unidad_medida VARCHAR(20)
+    unidad_medida VARCHAR(20),
+    activo BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE IF NOT EXISTS Cuentas_Bancarias (
@@ -124,7 +121,32 @@ CREATE TABLE IF NOT EXISTS Clientes (
     id_cuenta_preferida INT REFERENCES Cuentas_Bancarias(id_cuenta),
     rut VARCHAR(20),
     email VARCHAR(255),
-    fecha_ultima_compra DATE
+    fecha_ultima_compra DATE,
+    correo VARCHAR(255),
+    id_tipo_cliente INT REFERENCES Tipos_Cliente(id_tipo_cliente),
+    id_comuna INT REFERENCES Comunas(id_comuna),
+    fecha_inicio_cliente DATE DEFAULT CURRENT_DATE,
+    id_frecuencia_compra INT REFERENCES Frecuencias_Compra(id_frecuencia_compra),
+    gasto_promedio_por_compra DECIMAL(10, 2),
+    ticket_promedio_total DECIMAL(10, 2),
+    preferencia_mix_berries BOOLEAN,
+    preferencia_pulpas BOOLEAN,
+    id_tipo_consumo INT REFERENCES Tipos_Consumo(id_tipo_consumo),
+    preferencia_envase TEXT,
+    intereses_promociones TEXT,
+    preferencia_alimentaria TEXT,
+    epoca_compra_preferida VARCHAR(50),
+    recibio_seguimiento_postventa BOOLEAN DEFAULT FALSE,
+    participo_promociones BOOLEAN DEFAULT FALSE,
+    tiene_deudas_pendientes BOOLEAN DEFAULT FALSE,
+    suscrito_newsletter BOOLEAN DEFAULT FALSE,
+    dejo_resenas BOOLEAN DEFAULT FALSE,
+    nivel_satisfaccion VARCHAR(50),
+    segmento_vip BOOLEAN DEFAULT FALSE,
+    coordenadas_geograficas TEXT,
+    fecha_cumpleanos DATE,
+    id_clasificacion_cliente INT REFERENCES Clasificaciones_Cliente(id_clasificacion_cliente),
+    etiquetas_comportamiento TEXT[]
 );
 
 CREATE TABLE IF NOT EXISTS Proveedores (
@@ -181,6 +203,14 @@ CREATE TABLE IF NOT EXISTS Historial_Precios (
     precio_mayorista_neto_nuevo DECIMAL(10, 2)
 );
 
+CREATE TABLE IF NOT EXISTS Procesos (
+    id_proceso SERIAL PRIMARY KEY,
+    nombre_proceso VARCHAR(255) NOT NULL,
+    id_formato_producto_final INT REFERENCES Formatos_Producto(id_formato_producto),
+    observacion TEXT,
+    tipo_proceso VARCHAR(50) CHECK (tipo_proceso IN ('PRODUCCION', 'ENVASADO'))
+);
+
 CREATE TABLE IF NOT EXISTS Produccion_Diaria (
     id_produccion_diaria SERIAL PRIMARY KEY,
     id_formato_producto INT REFERENCES Formatos_Producto(id_formato_producto) NOT NULL,
@@ -190,27 +220,26 @@ CREATE TABLE IF NOT EXISTS Produccion_Diaria (
     etiqueta_final INT,
     costo_por_unidad DECIMAL(10, 2),
     origen VARCHAR(255),
-    estado VARCHAR(50) DEFAULT 'Iniciada'
+    estado VARCHAR(50) DEFAULT 'Iniciada',
+    hora_inicio TIME WITHOUT TIME ZONE,
+    hora_finalizacion TIME WITHOUT TIME ZONE,
+    etiquetas_defectuosas TEXT,
+    id_proceso INT REFERENCES Procesos(id_proceso)
 );
 
 -- -----------------------------------------------------
 -- Tablas con dependencias de Nivel 2
 -- -----------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS Recetas (
-    id_receta SERIAL PRIMARY KEY,
-    nombre_receta VARCHAR(255) NOT NULL,
-    id_formato_producto_final INT REFERENCES Formatos_Producto(id_formato_producto),
-    observacion TEXT
-);
-
 CREATE TABLE IF NOT EXISTS Pedidos (
     id_pedido SERIAL PRIMARY KEY,
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     id_cliente INT REFERENCES Clientes(id_cliente),
     id_trabajador INT REFERENCES Trabajadores(id_trabajador),
-    estado VARCHAR(50) DEFAULT 'pendiente',
-    total DECIMAL(10, 2)
+    estado VARCHAR(50) DEFAULT 'Agendado', -- Changed from 'pendiente' to 'Agendado' for consistency
+    total DECIMAL(10, 2),
+    con_factura BOOLEAN DEFAULT FALSE,
+    fecha_entrega DATE
 );
 
 CREATE TABLE IF NOT EXISTS Compras (
@@ -223,7 +252,8 @@ CREATE TABLE IF NOT EXISTS Compras (
     iva DECIMAL(10, 2),
     total DECIMAL(10, 2),
     observacion TEXT,
-    con_iva BOOLEAN
+    con_iva BOOLEAN,
+    con_factura BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS Ventas (
@@ -240,7 +270,8 @@ CREATE TABLE IF NOT EXISTS Ventas (
     con_iva_venta BOOLEAN,
     observacion TEXT,
     estado VARCHAR(50),
-    estado_pago VARCHAR(50)
+    estado_pago VARCHAR(50),
+    con_factura BOOLEAN DEFAULT FALSE
 );
 
 CREATE TABLE IF NOT EXISTS Inventario (
@@ -248,7 +279,8 @@ CREATE TABLE IF NOT EXISTS Inventario (
     id_formato_producto INT REFERENCES Formatos_Producto(id_formato_producto),
     id_ubicacion INT REFERENCES Ubicaciones_Inventario(id_ubicacion),
     stock_actual DECIMAL(10, 2),
-    fecha_actualizacion TIMESTAMP
+    fecha_actualizacion TIMESTAMP,
+    CONSTRAINT UQ_Inventario_FormatoUbicacion UNIQUE (id_formato_producto, id_ubicacion)
 );
 
 CREATE TABLE IF NOT EXISTS Movimientos_Inventario (
@@ -275,9 +307,9 @@ CREATE TABLE IF NOT EXISTS Transferencias_Bancarias (
 -- Tablas con dependencias de Nivel 3 (Detalles)
 -- -----------------------------------------------------
 
-CREATE TABLE IF NOT EXISTS Detalle_Recetas (
-    id_detalle_receta SERIAL PRIMARY KEY,
-    id_receta INT REFERENCES Recetas(id_receta),
+CREATE TABLE IF NOT EXISTS Detalle_Procesos (
+    id_detalle_proceso SERIAL PRIMARY KEY,
+    id_proceso INT REFERENCES Procesos(id_proceso),
     id_formato_producto_ingrediente INT REFERENCES Formatos_Producto(id_formato_producto),
     cantidad_requerida DECIMAL(10, 2)
 );
@@ -297,7 +329,8 @@ CREATE TABLE IF NOT EXISTS Detalle_Compras (
     id_compra INT REFERENCES Compras(id_compra),
     id_formato_producto INT REFERENCES Formatos_Producto(id_formato_producto),
     cantidad DECIMAL(10, 2),
-    precio_unitario DECIMAL(10, 2)
+    precio_unitario DECIMAL(10, 2),
+    id_lote INT REFERENCES Lotes_Produccion(id_lote)
 );
 
 CREATE TABLE IF NOT EXISTS Detalle_Ventas (
@@ -305,7 +338,9 @@ CREATE TABLE IF NOT EXISTS Detalle_Ventas (
     id_venta INT REFERENCES Ventas(id_venta),
     id_formato_producto INT REFERENCES Formatos_Producto(id_formato_producto),
     cantidad DECIMAL(10, 2),
-    precio_unitario DECIMAL(10, 2)
+    precio_unitario DECIMAL(10, 2),
+    costo_unitario_en_venta DECIMAL(10, 2),
+    id_lote INT REFERENCES Lotes_Produccion(id_lote)
 );
 
 CREATE TABLE IF NOT EXISTS Detalle_Movimientos_Inventario (
@@ -326,58 +361,3 @@ CREATE TABLE IF NOT EXISTS Reclamos (
     solucion_entregada TEXT,
     fecha_resolucion TIMESTAMP WITH TIME ZONE
 );
-
--- -----------------------------------------------------
--- Modificaciones a Tablas Existentes (ALTER TABLE)
--- -----------------------------------------------------
-
-ALTER TABLE Productos
-ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE;
-
-ALTER TABLE Clientes
-ADD COLUMN IF NOT EXISTS correo VARCHAR(255),
-ADD COLUMN IF NOT EXISTS id_tipo_cliente INT REFERENCES Tipos_Cliente(id_tipo_cliente),
-ADD COLUMN IF NOT EXISTS id_comuna INT REFERENCES Comunas(id_comuna),
-ADD COLUMN IF NOT EXISTS fecha_inicio_cliente DATE DEFAULT CURRENT_DATE,
-ADD COLUMN IF NOT EXISTS id_frecuencia_compra INT REFERENCES Frecuencias_Compra(id_frecuencia_compra),
-ADD COLUMN IF NOT EXISTS gasto_promedio_por_compra DECIMAL(10, 2),
-ADD COLUMN IF NOT EXISTS ticket_promedio_total DECIMAL(10, 2),
-ADD COLUMN IF NOT EXISTS preferencia_mix_berries BOOLEAN,
-ADD COLUMN IF NOT EXISTS preferencia_pulpas BOOLEAN,
-ADD COLUMN IF NOT EXISTS id_tipo_consumo INT REFERENCES Tipos_Consumo(id_tipo_consumo),
-ADD COLUMN IF NOT EXISTS preferencia_envase TEXT,
-ADD COLUMN IF NOT EXISTS intereses_promociones TEXT,
-ADD COLUMN IF NOT EXISTS preferencia_alimentaria TEXT,
-ADD COLUMN IF NOT EXISTS epoca_compra_preferida VARCHAR(50),
-ADD COLUMN IF NOT EXISTS recibio_seguimiento_postventa BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS participo_promociones BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS tiene_deudas_pendientes BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS suscrito_newsletter BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS dejo_resenas BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS nivel_satisfaccion VARCHAR(50),
-ADD COLUMN IF NOT EXISTS segmento_vip BOOLEAN DEFAULT FALSE,
-ADD COLUMN IF NOT EXISTS coordenadas_geograficas TEXT,
-ADD COLUMN IF NOT EXISTS fecha_cumpleanos DATE,
-ADD COLUMN IF NOT EXISTS id_clasificacion_cliente INT REFERENCES Clasificaciones_Cliente(id_clasificacion_cliente),
-ADD COLUMN IF NOT EXISTS etiquetas_comportamiento TEXT[];
-
-ALTER TABLE Detalle_Ventas
-ADD COLUMN IF NOT EXISTS costo_unitario_en_venta DECIMAL(10, 2);
-
-ALTER TABLE Compras
-ADD COLUMN IF NOT EXISTS con_factura BOOLEAN DEFAULT FALSE;
-
-ALTER TABLE Ventas
-ADD COLUMN IF NOT EXISTS con_factura BOOLEAN DEFAULT FALSE;
-
-ALTER TABLE Detalle_Compras
-ADD COLUMN IF NOT EXISTS id_lote INT REFERENCES Lotes_Produccion(id_lote);
-
-ALTER TABLE Detalle_Ventas
-ADD COLUMN IF NOT EXISTS id_lote INT REFERENCES Lotes_Produccion(id_lote);
-
--- Migration 022: Add timestamps and defective labels tracking to daily production
-ALTER TABLE Produccion_Diaria
-ADD COLUMN IF NOT EXISTS hora_inicio TIME WITHOUT TIME ZONE,
-ADD COLUMN IF NOT EXISTS hora_finalizacion TIME WITHOUT TIME ZONE,
-ADD COLUMN IF NOT EXISTS etiquetas_defectuosas TEXT;

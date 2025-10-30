@@ -6,7 +6,7 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
 
 ### 1. Base de Datos (PostgreSQL)
 
-**Progreso: 97%**
+**Progreso: 98%**
 
 -   **Completado:**
     -   Diseño y creación del esquema inicial (productos, clientes, ventas, etc.).
@@ -18,11 +18,12 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
     -   Historial de precios y costos para análisis de rentabilidad.
     -   Sistema de migraciones numeradas para control de versiones.
     -   Inserción de datos de prueba (proveedores, inventario, compras, pedidos/ventas, reclamos, ciudades, puntos de venta).
-    -   **Adición de restricción única en `Inventario` (id_formato_producto, id_ubicacion).**
-    -   **Adición de columna `con_factura` a la tabla `Pedidos`.**
+    -   Adición de restricción única en `Inventario` (id_formato_producto, id_ubicacion).
+    -   Adición de columna `con_factura` a la tabla `Pedidos`.
+    -   **Consolidación del esquema de la base de datos en `postgres_schema_consolidado.sql`.**
 
 -   **Pendiente:**
-    -   Posibles ajustes para el **Módulo de Reclamos**.
+    -   Posibles ajustes para el **Módulo de Reclamos**. (Ya mencionado)
 
 ---
 
@@ -61,7 +62,7 @@ Este documento resume el estado de desarrollo del proyecto, dividido en sus comp
     -   Interfaz para el flujo de **Producción** (`ProduccionDiaria.js`).
     -   Interfaz para **Agendar Pedidos** (`PedidoForm.js`).
     -   Interfaz para **Gestionar Pedidos** y convertirlos en ventas (`PedidosManagement.js`).
-    -   Implementación del ruteo protegido con `react-router-dom`.
+    -   Implementación del ruteo protegido con `react-router-dom`.P
     -   Implementación de la lógica para mostrar/ocultar vistas según el rol del usuario.
 
 -   **Pendiente:**

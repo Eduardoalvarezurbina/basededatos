@@ -96,6 +96,7 @@ erDiagram
         VARCHAR estado
         DATE fecha
         BOOLEAN con_factura
+        DATE fecha_entrega
     }
     Detalle_Pedidos {
         INT id_detalle_pedido PK
@@ -154,22 +155,4 @@ erDiagram
 
 La base de datos se construyó y evolucionó a través de los siguientes scripts, ejecutados en orden:
 
-- `001_initial_schema.sql`: Creación de las tablas iniciales.
-- `005_create_users_table.sql`: Creación de la tabla de Usuarios.
-- `008_add_activo_to_productos.sql`: Añade la columna `activo` a Productos.
-- `009_create_orders_tables.sql`: Creación de las tablas de Pedidos.
-- `012_create_lookup_tables_for_clientes.sql`: Creación de tablas de apoyo para Clientes (Regiones, Comunas, etc.).
-- `013_alter_clientes_table.sql`: Añade múltiples campos de perfilamiento a la tabla Clientes.
-- `014_create_reclamos_table.sql`: Creación de la tabla de Reclamos.
-- `015_add_costo_to_detalle_ventas.sql`: Añade el costo a los detalles de venta para calcular utilidad.
-- `016_create_historial_precios_table.sql`: Creación de la tabla para historial de precios.
-- `017_add_factura_to_transacciones.sql`: Añade el campo `con_factura` a Compras y Ventas.
-- `018_create_lotes_and_add_to_details.sql`: Crea la tabla de Lotes y la integra en los detalles de compras/ventas.
-- `019_fix_detalle_pedidos.sql`: Corrige la tabla `Detalle_Pedidos` para un mejor diseño.
-- `020_remove_canal_from_clientes.sql`: Elimina una columna redundante de la tabla Clientes.
-- `021_create_produccion_diaria_table.sql`: Crea la tabla para manejar el flujo de producción en dos pasos.
-- `022_add_fields_to_produccion_diaria.sql`: Añade campos para registrar `hora_inicio`, `hora_finalizacion` y `etiquetas_defectuosas` a `Produccion_Diaria`.
-- `023_rename_recetas_to_procesos.sql`: Renombra las tablas `Recetas` a `Procesos` y `Detalle_Recetas` a `Detalle_Procesos`, y añade `tipo_proceso` a `Procesos`.
-- `024_add_proceso_to_produccion_diaria.sql`: Añade la columna `id_proceso` a `Produccion_Diaria` y establece la clave foránea a `Procesos(id_proceso)`.
-- `025_add_unique_constraint_to_inventario.sql`: Añade una restricción única a la tabla `Inventario` en las columnas `id_formato_producto` y `id_ubicacion`.
-- `026_add_con_factura_to_pedidos.sql`: Añade la columna `con_factura` (BOOLEAN DEFAULT FALSE) a la tabla `Pedidos`.
+-   **Esquema Consolidado:** El archivo `postgres_schema_consolidado.sql` ahora contiene la definición completa y final del esquema de la base de datos, integrando todas las tablas, columnas y restricciones de las migraciones individuales. Este archivo debe ser la fuente de verdad para la estructura actual de la base de datos.
