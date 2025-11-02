@@ -57,7 +57,6 @@ CREATE TABLE IF NOT EXISTS Productos (
     id_producto SERIAL PRIMARY KEY,
     nombre VARCHAR(255) NOT NULL,
     categoria VARCHAR(50),
-    unidad_medida VARCHAR(20),
     activo BOOLEAN DEFAULT TRUE
 );
 
@@ -236,7 +235,7 @@ CREATE TABLE IF NOT EXISTS Pedidos (
     fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     id_cliente INT REFERENCES Clientes(id_cliente),
     id_trabajador INT REFERENCES Trabajadores(id_trabajador),
-    estado VARCHAR(50) DEFAULT 'Agendado', -- Changed from 'pendiente' to 'Agendado' for consistency
+    estado VARCHAR(50) DEFAULT 'Agendado',
     total DECIMAL(10, 2),
     con_factura BOOLEAN DEFAULT FALSE,
     fecha_entrega DATE

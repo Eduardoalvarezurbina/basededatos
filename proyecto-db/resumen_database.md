@@ -156,3 +156,4 @@ erDiagram
 La base de datos se construyó y evolucionó a través de los siguientes scripts, ejecutados en orden:
 
 -   **Esquema Consolidado:** El archivo `postgres_schema_consolidado.sql` ahora contiene la definición completa y final del esquema de la base de datos, integrando todas las tablas, columnas y restricciones de las migraciones individuales. Este archivo debe ser la fuente de verdad para la estructura actual de la base de datos.
+-   `028_drop_unidad_medida_from_productos.sql`: Elimina la columna `unidad_medida` de la tabla `Productos`.
