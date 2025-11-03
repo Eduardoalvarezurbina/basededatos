@@ -225,11 +225,32 @@ Este documento lista todos los endpoints disponibles en el backend de la aplicac
 *   **GET /compras**
     *   **Descripción:** Obtiene todas las compras con sus detalles y el nombre del proveedor.
     *   **Respuesta:** `Array` de objetos `Compra` con `detalles` y `nombre_proveedor`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /compras/:id**
+    *   **Descripción:** Obtiene una compra específica por su ID, incluyendo sus detalles.
+    *   **Parámetros:** `id` (ID de la compra).
+    *   **Respuesta:** Objeto `Compra` con `detalles` y `nombre_proveedor`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
 
 *   **POST /compras**
     *   **Descripción:** Crea una nueva compra y actualiza el inventario.
     *   **Body:** `{ id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva, detalles: [{ id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }] }`
     *   **Respuesta:** `{ message: 'Purchase created successfully', id_compra: newCompraId }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /compras/:id**
+    *   **Descripción:** Actualiza los campos de cabecera de una compra existente por su ID. No modifica los detalles de la compra.
+    *   **Parámetros:** `id` (ID de la compra).
+    *   **Body:** `{ id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva }`
+    *   **Respuesta:** `{ message: 'Purchase header updated successfully', compra: updatedCompra }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /compras/:id**
+    *   **Descripción:** Elimina una compra por su ID y revierte los cambios de inventario asociados.
+    *   **Parámetros:** `id` (ID de la compra).
+    *   **Respuesta:** `{ message: 'Purchase deleted and inventory rolled back successfully', compra: deletedCompra }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
 
 ---
 
