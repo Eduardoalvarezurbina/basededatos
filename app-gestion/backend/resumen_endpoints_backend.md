@@ -424,6 +424,176 @@ Este documento lista todos los endpoints disponibles en el backend de la aplicac
     *   **Parámetros:** `id` (ID de la fuente de contacto).
     *   **Respuesta:** `{ message: 'Contact source deleted successfully', fuente_contacto: deletedFuenteContacto }`
     *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Puntos de Venta
+
+*   **GET /puntos-venta**
+    *   **Descripción:** Obtiene todos los puntos de venta.
+    *   **Respuesta:** `Array` de objetos `Punto_Venta`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /puntos-venta/:id**
+    *   **Descripción:** Obtiene un punto de venta por su ID.
+    *   **Parámetros:** `id` (ID del punto de venta).
+    *   **Respuesta:** Objeto `Punto_Venta`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /puntos-venta**
+    *   **Descripción:** Crea un nuevo punto de venta.
+    *   **Body:** `{ nombre, tipo, direccion, id_ciudad }`
+    *   **Respuesta:** Objeto `Punto_Venta` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /puntos-venta/:id**
+    *   **Descripción:** Actualiza un punto de venta existente.
+    *   **Parámetros:** `id` (ID del punto de venta).
+    *   **Body:** `{ nombre, tipo, direccion, id_ciudad }`
+    *   **Respuesta:** `{ message: 'Sale point updated successfully', punto_venta: updatedPuntoVenta }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /puntos-venta/:id**
+    *   **Descripción:** Elimina un punto de venta.
+    *   **Parámetros:** `id` (ID del punto de venta).
+    *   **Respuesta:** `{ message: 'Sale point deleted successfully', punto_venta: deletedPuntoVenta }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Trabajadores
+
+*   **GET /trabajadores**
+    *   **Descripción:** Obtiene todos los trabajadores.
+    *   **Respuesta:** `Array` de objetos `Trabajador`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /trabajadores/:id**
+    *   **Descripción:** Obtiene un trabajador por su ID.
+    *   **Parámetros:** `id` (ID del trabajador).
+    *   **Respuesta:** Objeto `Trabajador`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /trabajadores**
+    *   **Descripción:** Crea un nuevo trabajador.
+    *   **Body:** `{ nombre }`
+    *   **Respuesta:** Objeto `Trabajador` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /trabajadores/:id**
+    *   **Descripción:** Actualiza un trabajador existente.
+    *   **Parámetros:** `id` (ID del trabajador).
+    *   **Body:** `{ nombre }`
+    *   **Respuesta:** `{ message: 'Worker updated successfully', trabajador: updatedTrabajador }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /trabajadores/:id**
+    *   **Descripción:** Elimina un trabajador.
+    *   **Parámetros:** `id` (ID del trabajador).
+    *   **Respuesta:** `{ message: 'Worker deleted successfully', trabajador: deletedTrabajador }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Regiones
+
+*   **GET /regiones**
+    *   **Descripción:** Obtiene todas las regiones.
+    *   **Respuesta:** `Array` de objetos `Region`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /regiones/:id**
+    *   **Descripción:** Obtiene una región por su ID.
+    *   **Parámetros:** `id` (ID de la región).
+    *   **Respuesta:** Objeto `Region`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /regiones**
+    *   **Descripción:** Crea una nueva región.
+    *   **Body:** `{ nombre_region }`
+    *   **Respuesta:** Objeto `Region` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /regiones/:id**
+    *   **Descripción:** Actualiza una región existente.
+    *   **Parámetros:** `id` (ID de la región).
+    *   **Body:** `{ nombre_region }`
+    *   **Respuesta:** `{ message: 'Region updated successfully', region: updatedRegion }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /regiones/:id**
+    *   **Descripción:** Elimina una región.
+    *   **Parámetros:** `id` (ID de la región).
+    *   **Respuesta:** `{ message: 'Region deleted successfully', region: deletedRegion }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Comunas
+
+*   **GET /comunas**
+    *   **Descripción:** Obtiene todas las comunas.
+    *   **Respuesta:** `Array` de objetos `Comuna`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /comunas/:id**
+    *   **Descripción:** Obtiene una comuna por su ID.
+    *   **Parámetros:** `id` (ID de la comuna).
+    *   **Respuesta:** Objeto `Comuna`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /comunas**
+    *   **Descripción:** Crea una nueva comuna.
+    *   **Body:** `{ nombre_comuna, id_region }`
+    *   **Respuesta:** Objeto `Comuna` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /comunas/:id**
+    *   **Descripción:** Actualiza una comuna existente.
+    *   **Parámetros:** `id` (ID de la comuna).
+    *   **Body:** `{ nombre_comuna, id_region }`
+    *   **Respuesta:** `{ message: 'Comuna updated successfully', comuna: updatedComuna }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /comunas/:id**
+    *   **Descripción:** Elimina una comuna.
+    *   **Parámetros:** `id` (ID de la comuna).
+    *   **Respuesta:** `{ message: 'Comuna deleted successfully', comuna: deletedComuna }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Categorias de Cliente
+
+*   **GET /categorias-cliente**
+    *   **Descripción:** Obtiene todas las categorías de cliente.
+    *   **Respuesta:** `Array` de objetos `Categoria_Cliente`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /categorias-cliente/:id**
+    *   **Descripción:** Obtiene una categoría de cliente por su ID.
+    *   **Parámetros:** `id` (ID de la categoría de cliente).
+    *   **Respuesta:** Objeto `Categoria_Cliente`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /categorias-cliente**
+    *   **Descripción:** Crea una nueva categoría de cliente.
+    *   **Body:** `{ nombre_categoria }`
+    *   **Respuesta:** Objeto `Categoria_Cliente` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /categorias-cliente/:id**
+    *   **Descripción:** Actualiza una categoría de cliente existente.
+    *   **Parámetros:** `id` (ID de la categoría de cliente).
+    *   **Body:** `{ nombre_categoria }`
+    *   **Respuesta:** `{ message: 'Client category updated successfully', categoria_cliente: updatedCategoriaCliente }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /categorias-cliente/:id**
+    *   **Descripción:** Elimina una categoría de cliente.
+    *   **Parámetros:** `id` (ID de la categoría de cliente).
+    *   **Respuesta:** `{ message: 'Client category deleted successfully', categoria_cliente: deletedCategoriaCliente }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
     *   **Test Status:** **OK** - Tested with `api_test.js`.
 
 *   **PUT /proveedores/:id**

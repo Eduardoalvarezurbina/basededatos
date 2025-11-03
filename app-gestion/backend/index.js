@@ -10,6 +10,11 @@ const inventarioRouter = require('./routes/inventario');
 const ciudadesRouter = require('./routes/ciudades');
 const tiposPagoRouter = require('./routes/tiposPago');
 const fuentesContactoRouter = require('./routes/fuentesContacto');
+const puntosVentaRouter = require('./routes/puntosVenta');
+const trabajadoresRouter = require('./routes/trabajadores');
+const regionesRouter = require('./routes/regiones');
+const comunasRouter = require('./routes/comunas');
+const categoriasClienteRouter = require('./routes/categoriasCliente');
 
 const app = express();
 const port = 3001;
@@ -34,6 +39,11 @@ app.use('/inventario', inventarioRouter);
 app.use('/ciudades', ciudadesRouter);
 app.use('/tipos-pago', tiposPagoRouter);
 app.use('/fuentes-contacto', fuentesContactoRouter);
+app.use('/puntos-venta', puntosVentaRouter);
+app.use('/trabajadores', trabajadoresRouter);
+app.use('/regiones', regionesRouter);
+app.use('/comunas', comunasRouter);
+app.use('/categorias-cliente', categoriasClienteRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello from the backend!');

@@ -163,71 +163,205 @@ async function testComprasCrud() {
 }
 
 async function testVentasGet() {
+
     console.log(`\n--- INICIANDO PRUEBA DE LECTURA PARA: Ventas ---`);
+
     let clienteId, formatoId, loteId, ventaId;
+
     const ubicacionId = 1; // Usar una ubicación conocida
 
+
+
     try {
+
         // 1. Crear dependencias
+
         console.log('1. Creando dependencias para la venta...');
+
         const clienteRes = await request('POST', '/clients', { nombre: 'Cliente para Ventas', telefono: '111222' });
+
         clienteId = clienteRes.body.id_cliente;
 
+
+
         const productoRes = await request('POST', '/products', { nombre: 'Producto para Ventas', categoria: 'Ventas' });
+
         const productoId = productoRes.body.id_producto;
 
+
+
         const formatoRes = await request('POST', '/formatos-producto', { id_producto: productoId, formato: 'Formato Ventas', precio_detalle_neto: 1500 });
+
         formatoId = formatoRes.body.id_formato_producto;
 
+
+
         const loteRes = await request('POST', '/lotes', { codigo_lote: `LOTE-VENTA-${Date.now()}`, id_producto: productoId, fecha_produccion: '2025-01-01', cantidad_inicial: 100, costo_por_unidad: 500 });
+
         loteId = loteRes.body.id_lote;
 
+
+
         // 2. Añadir stock manualmente para la prueba
+
         await request('POST', '/inventario', { id_formato_producto: formatoId, id_ubicacion: ubicacionId, stock_actual: 100 });
 
+
+
         // 3. Crear la Venta
+
         console.log('2. Creando una venta de prueba...');
+
         const ventaPayload = {
+
             id_cliente: clienteId,
+
             id_punto_venta: 1, // Asumir punto de venta 1
+
             id_tipo_pago: 1, // Asumir tipo de pago 1
+
             total_bruto_venta: 15000,
+
             detalles: [
+
                 { id_formato_producto: formatoId, cantidad: 10, precio_unitario: 1500, id_lote: loteId, id_ubicacion: ubicacionId }
+
             ]
+
         };
+
         const ventaRes = await request('POST', '/ventas', ventaPayload);
+
         if (ventaRes.statusCode !== 201) throw new Error(`POST /ventas falló: ${JSON.stringify(ventaRes.body)}`);
+
         ventaId = ventaRes.body.id_venta;
+
         console.log(`  -> ÉXITO. Venta creada con ID: ${ventaId}`);
 
+
+
         // 4. Probar GET /ventas
+
         console.log('3. Probando GET /ventas...');
+
         const getListRes = await request('GET', '/ventas');
+
         if (getListRes.statusCode !== 200 || !getListRes.body.some(v => v.id_venta === ventaId)) {
+
             throw new Error('GET /ventas falló o no contiene la venta creada.');
+
         }
+
         console.log('  -> ÉXITO. La lista de ventas contiene la nueva venta.');
 
+
+
         // 5. Probar GET /ventas/:id
+
         console.log(`4. Probando GET /ventas/${ventaId}...`);
+
         const getSingleRes = await request('GET', `/ventas/${ventaId}`);
+
         if (getSingleRes.statusCode !== 200 || getSingleRes.body.detalles.length !== 1) {
+
             throw new Error(`GET /ventas/${ventaId} falló.`);
+
         }
+
         console.log('  -> ÉXITO. Detalle de venta obtenido correctamente.');
 
+
+
         console.log('--- PRUEBA DE LECTURA PARA Ventas COMPLETADA CON ÉXITO ---');
+
+        return true;
+
+
+
+    } catch (error) {
+
+        console.error(`--- PRUEBA DE LECTURA PARA Ventas FALLÓ ---`);
+
+        console.error(error.message);
+
+        return false;
+
+    } finally {
+
+        // Limpieza de datos creados
+
+        if (ventaId) await request('DELETE', `/ventas/${ventaId}`);
+
+        if (clienteId) await request('DELETE', `/clients/${clienteId}`);
+
+    }
+
+}
+
+
+
+async function testComunasCrud() {
+
+    console.log(`\n--- INICIANDO PRUEBA COMPLEJA PARA: Comunas ---`);
+
+    let regionId, comunaId;
+
+
+
+    try {
+
+        // 1. Crear dependencia: Region
+
+        console.log('1. Creando dependencia (Region)...');
+
+        const regionRes = await request('POST', '/regiones', { nombre_region: 'Region para Comunas' });
+
+        regionId = regionRes.body.id_region;
+
+        if (!regionId) throw new Error('No se pudo crear la Region de dependencia.');
+
+        console.log(`  -> ÉXITO. Region creada con ID: ${regionId}`);
+
+
+
+        // 2. Probar CRUD de Comuna
+
+        await testCrud(
+
+            'Comuna (con dependencia)',
+
+            '/comunas',
+
+            { nombre_comuna: 'Comuna de Prueba', id_region: regionId },
+
+            { nombre_comuna: 'Comuna de Prueba Actualizada', id_region: regionId },
+
+            'id_comuna'
+
+        );
+
+
+
+        console.log('--- PRUEBA PARA Comunas COMPLETADA CON ÉXITO ---');
+
         return true;
 
     } catch (error) {
-        console.error(`--- PRUEBA DE LECTURA PARA Ventas FALLÓ ---`);
+
+        console.error(`--- PRUEBA PARA Comunas FALLÓ ---`);
+
         console.error(error.message);
+
         return false;
+
     } finally {
-                      // Limpieza de datos creados
-                      if (ventaId) await request('DELETE', `/ventas/${ventaId}`);
-                      if (clienteId) await request('DELETE', `/clients/${clienteId}`);    }
+
+        // Limpieza de dependencias
+
+        if (regionId) await request('DELETE', `/regiones/${regionId}`);
+
+    }
+
 }
 
 async function runAllTests() {
@@ -289,7 +423,39 @@ async function runAllTests() {
         'id_fuente_contacto'
     ));
 
-    results.push(await testComprasCrud());
+    results.push(await testCrud(
+        'Puntos de Venta',
+        '/puntos-venta',
+        { nombre: 'Punto de Venta de Prueba', tipo: 'Tienda', direccion: 'Calle Falsa 123', id_ciudad: 1 },
+        { nombre: 'Punto de Venta de Prueba Actualizado', tipo: 'Kiosko', direccion: 'Calle Verdadera 456', id_ciudad: 1 },
+        'id_punto_venta'
+    ));
+
+    results.push(await testCrud(
+        'Trabajadores',
+        '/trabajadores',
+        { nombre: 'Trabajador de Prueba' },
+        { nombre: 'Trabajador de Prueba Actualizado' },
+        'id_trabajador'
+    ));
+
+    results.push(await testCrud(
+        'Regiones',
+        '/regiones',
+        { nombre_region: 'Region de Prueba' },
+        { nombre_region: 'Region de Prueba Actualizada' },
+        'id_region'
+    ));
+
+    results.push(await testComunasCrud());
+
+    results.push(await testCrud(
+        'Categorias de Cliente',
+        '/categorias-cliente',
+        { nombre_categoria: 'Categoria de Prueba' },
+        { nombre_categoria: 'Categoria de Prueba Actualizada' },
+        'id_categoria_cliente'
+    ));
 
     results.push(await testVentasGet());
 
