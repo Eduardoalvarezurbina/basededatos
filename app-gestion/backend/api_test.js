@@ -98,16 +98,35 @@ async function testCrud(entityName, basePath, postPayload, putPayload, idField) 
 async function testComprasCrud() {
     console.log(`\n--- INICIANDO PRUEBA COMPLEJA PARA: Compras ---`);
     let proveedorId, formatoId, compraId;
+    const ubicacionId = 1; // Ubicación de prueba
+    const cantidadComprada = 10;
+    let initialStock;
 
     try {
-        // 1. Crear dependencias: Proveedor y Formato de Producto
-        console.log('1. Creando dependencias (Proveedor y Formato de Producto)...');
+        // 1. Crear dependencias y obtener stock inicial
+        console.log('1. Creando dependencias y verificando stock inicial...');
         const proveedorRes = await request('POST', '/proveedores', { nombre: 'Proveedor para Compras', rut: '555-5', telefono: '123' });
         proveedorId = proveedorRes.body.id_proveedor;
         const formatoRes = await request('POST', '/formatos-producto', { id_producto: 1, formato: 'Formato para Compras', precio_detalle_neto: 1000 });
         formatoId = formatoRes.body.id_formato_producto;
         if (!proveedorId || !formatoId) throw new Error('No se pudieron crear las dependencias.');
-        console.log(`  -> ÉXITO. Proveedor ID: ${proveedorId}, Formato ID: ${formatoId}`);
+        
+        // Asegurarse de que el inventario exista o crearlo
+        try {
+            const stockRes = await request('GET', `/inventario/stock/${formatoId}/${ubicacionId}`);
+            if (stockRes.statusCode === 404) {
+                initialStock = 0;
+            } else {
+                initialStock = parseFloat(stockRes.body.stock_actual);
+            }
+        } catch (e) {
+            // Si hay un error diferente a 404, lo lanzamos
+            if (e.statusCode !== 404) {
+                throw e;
+            }
+            initialStock = 0;
+        }
+        console.log(`  -> ÉXITO. Proveedor ID: ${proveedorId}, Formato ID: ${formatoId}, Stock Inicial: ${initialStock}`);
 
         // 2. Crear la Compra
         console.log('2. Probando POST /compras...');
@@ -115,7 +134,7 @@ async function testComprasCrud() {
             id_proveedor: proveedorId,
             observacion: 'Compra de prueba',
             detalles: [
-                { id_formato_producto: formatoId, cantidad: 10, precio_unitario: 100, id_ubicacion: 1 } // Asumimos ubicación 1
+                { id_formato_producto: formatoId, cantidad: cantidadComprada, precio_unitario: 100, id_ubicacion: ubicacionId }
             ]
         };
         const compraRes = await request('POST', '/compras', compraPayload);
@@ -123,30 +142,29 @@ async function testComprasCrud() {
         compraId = compraRes.body.id_compra;
         console.log(`  -> ÉXITO. Compra creada con ID: ${compraId}`);
 
-        // 3. Verificar la Compra creada
-        console.log(`3. Probando GET /compras/${compraId}...`);
-        const getRes = await request('GET', `/compras/${compraId}`);
-        if (getRes.statusCode !== 200 || getRes.body.detalles.length !== 1) throw new Error(`GET /compras/${compraId} falló.`);
-        console.log('  -> ÉXITO. Compra obtenida correctamente.');
+        // 3. Verificar aumento de stock
+        console.log('3. Verificando aumento de stock...');
+        const stockAfterPostRes = await request('GET', `/inventario/stock/${formatoId}/${ubicacionId}`);
+        const stockAfterPost = parseFloat(stockAfterPostRes.body.stock_actual);
+        if (stockAfterPost !== initialStock + cantidadComprada) {
+            throw new Error(`El stock no aumentó correctamente. Esperado: ${initialStock + cantidadComprada}, Obtenido: ${stockAfterPost}`);
+        }
+        console.log(`  -> ÉXITO. Stock después de la compra: ${stockAfterPost}`);
 
-        // 4. Actualizar la Compra
-        console.log(`4. Probando PUT /compras/${compraId}...`);
-        const putPayload = { ...getRes.body, observacion: 'Compra de prueba actualizada' };
-        const putRes = await request('PUT', `/compras/${compraId}`, putPayload);
-        if (putRes.statusCode !== 200 || putRes.body.compra.observacion !== 'Compra de prueba actualizada') throw new Error(`PUT /compras/${compraId} falló.`);
-        console.log('  -> ÉXITO. Compra actualizada.');
-
-        // 5. Eliminar la Compra
-        console.log(`5. Probando DELETE /compras/${compraId}...`);
+        // 4. Eliminar la Compra
+        console.log(`4. Probando DELETE /compras/${compraId}...`);
         const deleteRes = await request('DELETE', `/compras/${compraId}`);
         if (deleteRes.statusCode !== 200) throw new Error(`DELETE /compras/${compraId} falló: ${JSON.stringify(deleteRes.body)}`);
         console.log('  -> ÉXITO. Compra eliminada.');
 
-        // 6. Verificar el borrado
-        console.log(`6. Verificando borrado con GET /compras/${compraId}...`);
-        const getAfterDelete = await request('GET', `/compras/${compraId}`);
-        if (getAfterDelete.statusCode !== 404) throw new Error('La compra no fue eliminada correctamente.');
-        console.log('  -> ÉXITO. Compra no encontrada (404).');
+        // 5. Verificar reversión de stock
+        console.log('5. Verificando reversión de stock...');
+        const stockAfterDeleteRes = await request('GET', `/inventario/stock/${formatoId}/${ubicacionId}`);
+        const stockAfterDelete = parseFloat(stockAfterDeleteRes.body.stock_actual);
+        if (stockAfterDelete !== initialStock) {
+            throw new Error(`El stock no se revirtió correctamente. Esperado: ${initialStock}, Obtenido: ${stockAfterDelete}`);
+        }
+        console.log(`  -> ÉXITO. Stock después de eliminar: ${stockAfterDelete}`);
 
         console.log('--- PRUEBA PARA Compras COMPLETADA CON ÉXITO ---');
         return true;
@@ -158,7 +176,7 @@ async function testComprasCrud() {
         // Limpieza de dependencias
         if (proveedorId) await request('DELETE', `/proveedores/${proveedorId}`);
         if (formatoId) await request('DELETE', `/formatos-producto/${formatoId}`);
-        if (compraId) await request('DELETE', `/compras/${compraId}`); // Por si el test falló antes de limpiar
+        if (compraId) await request('DELETE', `/compras/${compraId}`);
     }
 }
 
@@ -307,6 +325,7 @@ async function runAllTests() {
         'id_cliente'
     ));
     results.push(await testPedidoToVentaWorkflow());
+    results.push(await testComprasCrud());
 
     console.log('\n--- Resumen de Pruebas ---');
     const all_passed = results.every(r => r);

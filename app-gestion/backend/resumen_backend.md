@@ -40,7 +40,7 @@ El backend es el **cerebro y el intermediario** del sistema. No almacena datos, 
 ### Gestión de Compras (`/compras`)
 - **Propósito:** Registrar compras a proveedores y su impacto en el inventario.
 - **Endpoints:**
-    - `POST /compras`: Registra una compra y actualiza el stock.
+    - `POST /compras`: Registra una compra y actualiza el stock en la ubicación correcta.
     - `GET /compras`: Obtiene el historial de compras.
     - `GET /compras/:id`: Obtiene una compra específica por ID.
     - `PUT /compras/:id`: Actualiza campos de cabecera de una compra.

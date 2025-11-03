@@ -236,8 +236,7 @@ Este documento lista todos los endpoints disponibles en el backend de la aplicac
 *   **POST /compras**
     *   **Descripción:** Crea una nueva compra y actualiza el inventario.
     *   **Body:** `{ id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva, detalles: [{ id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }] }`
-    *   **Respuesta:** `{ message: 'Purchase created successfully', id_compra: newCompraId }`
-    *   **Test Status:** **OK** - Tested with `api_test.js`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`, including inventory impact.
 
 *   **PUT /compras/:id**
     *   **Descripción:** Actualiza los campos de cabecera de una compra existente por su ID. No modifica los detalles de la compra.
@@ -250,7 +249,7 @@ Este documento lista todos los endpoints disponibles en el backend de la aplicac
     *   **Descripción:** Elimina una compra por su ID y revierte los cambios de inventario asociados.
     *   **Parámetros:** `id` (ID de la compra).
     *   **Respuesta:** `{ message: 'Purchase deleted and inventory rolled back successfully', compra: deletedCompra }`
-    *   **Test Status:** **OK** - Tested with `api_test.js`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`, including inventory rollback.
 
 ---
 
