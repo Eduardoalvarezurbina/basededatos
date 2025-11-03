@@ -730,6 +730,40 @@ Este documento lista todos los endpoints disponibles en el backend de la aplicac
     *   **Parámetros:** `id` (ID de la cuenta bancaria).
     *   **Respuesta:** `{ message: 'Bank account deleted successfully', cuenta_bancaria: deletedCuentaBancaria }`
     *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Proveedores
+
+*   **GET /proveedores**
+    *   **Descripción:** Obtiene todos los proveedores, incluyendo el nombre de la ciudad.
+    *   **Respuesta:** `Array` de objetos `Proveedor` con `nombre_ciudad`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /proveedores/:id**
+    *   **Descripción:** Obtiene un proveedor por su ID, incluyendo el nombre de la ciudad.
+    *   **Parámetros:** `id` (ID del proveedor).
+    *   **Respuesta:** Objeto `Proveedor` con `nombre_ciudad`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /proveedores**
+    *   **Descripción:** Crea un nuevo proveedor.
+    *   **Body:** `{ nombre, rut, telefono, id_ciudad }`
+    *   **Respuesta:** Objeto `Proveedor` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /proveedores/:id**
+    *   **Descripción:** Actualiza un proveedor existente.
+    *   **Parámetros:** `id` (ID del proveedor).
+    *   **Body:** `{ nombre, rut, telefono, id_ciudad }`
+    *   **Respuesta:** `{ message: 'Supplier updated successfully', proveedor: updatedProveedor }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /proveedores/:id**
+    *   **Descripción:** Elimina un proveedor.
+    *   **Parámetros:** `id` (ID del proveedor).
+    *   **Respuesta:** `{ message: 'Supplier deleted successfully', proveedor: deletedProveedor }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
     *   **Test Status:** **OK** - Tested with `api_test.js`.
 
 *   **PUT /proveedores/:id**

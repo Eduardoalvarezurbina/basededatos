@@ -86,3 +86,5 @@ El backend es el **cerebro y el intermediario** del sistema. No almacena datos, 
     - CRUD completo para `/frecuencias-compra`.
     - CRUD completo para `/tipos-consumo`.
     - CRUD completo para `/cuentas-bancarias`.
+    - CRUD completo para `/clients`.
+    - CRUD completo para `/proveedores`.

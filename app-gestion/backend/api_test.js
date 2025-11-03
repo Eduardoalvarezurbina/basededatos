@@ -47,35 +47,35 @@ async function testCrud(entityName, basePath, postPayload, putPayload, idField) 
     console.log(`\n--- INICIANDO PRUEBA PARA: ${entityName} ---`);
 
     // 1. POST (Crear)
-    console.log(`1. Probando POST ${basePath}...`);
+    // console.log(`1. Probando POST ${basePath}...`);
     const postRes = await request('POST', basePath, postPayload);
     if (postRes.statusCode !== 201) throw new Error(`POST falló con status ${postRes.statusCode}: ${JSON.stringify(postRes.body)}`);
     
     createdId = postRes.body[idField];
 
     if (!createdId) throw new Error('No se pudo obtener el ID del recurso creado.');
-    console.log(`  -> ÉXITO. Creado con ID: ${createdId}`);
+    // console.log(`  -> ÉXITO. Creado con ID: ${createdId}`);
 
     // 2. GET (Leer uno)
-    console.log(`2. Probando GET ${basePath}/${createdId}...`);
+    // console.log(`2. Probando GET ${basePath}/${createdId}...`);
     const getRes = await request('GET', `${basePath}/${createdId}`);
     if (getRes.statusCode !== 200) throw new Error(`GET (uno) falló con status ${getRes.statusCode}`);
-    console.log(`  -> ÉXITO. Obtenido: ${JSON.stringify(getRes.body)}`);
+    // console.log(`  -> ÉXITO. Obtenido: ${JSON.stringify(getRes.body)}`);
 
     // 3. PUT (Actualizar)
-    console.log(`3. Probando PUT ${basePath}/${createdId}...`);
+    // console.log(`3. Probando PUT ${basePath}/${createdId}...`);
     const putRes = await request('PUT', `${basePath}/${createdId}`, putPayload);
     if (putRes.statusCode !== 200) throw new Error(`PUT falló con status ${putRes.statusCode}: ${JSON.stringify(putRes.body)}`);
-    console.log(`  -> ÉXITO. Actualizado: ${JSON.stringify(putRes.body)}`);
+    // console.log(`  -> ÉXITO. Actualizado: ${JSON.stringify(putRes.body)}`);
 
     // 4. DELETE (Borrar)
-    console.log(`4. Probando DELETE ${basePath}/${createdId}...`);
+    // console.log(`4. Probando DELETE ${basePath}/${createdId}...`);
     const deleteRes = await request('DELETE', `${basePath}/${createdId}`);
     if (deleteRes.statusCode !== 200) throw new Error(`DELETE falló con status ${deleteRes.statusCode}`);
-    console.log(`  -> ÉXITO. Borrado.`);
+    // console.log(`  -> ÉXITO. Borrado.`);
 
     // 5. GET (Verificar borrado)
-    console.log(`5. Verificando borrado con GET ${basePath}/${createdId}...`);
+    // console.log(`5. Verificando borrado con GET ${basePath}/${createdId}...`);
     const getAfterDeleteRes = await request('GET', `${basePath}/${createdId}`);
     if (getAfterDeleteRes.statusCode !== 404) throw new Error(`GET (después de borrar) debería ser 404, pero fue ${getAfterDeleteRes.statusCode}`);
     console.log(`  -> ÉXITO. Recurso no encontrado (404).`);
@@ -273,7 +273,7 @@ async function runAllTests() {
     const results = [];
     const testSuffix = new Date().getTime();
 
-    results.push(await testCrud('Proveedores', '/proveedores', { nombre: `Proveedor de Prueba ${testSuffix}`, rut: '1234567-8', telefono: '987654321' }, { nombre: `Proveedor de Prueba Actualizado ${testSuffix}`, rut: '1234567-8', telefono: '987654321' }, 'id_proveedor'));
+    results.push(await testCrud('Proveedores', '/proveedores', { nombre: `Proveedor de Prueba ${testSuffix}`, rut: '1234567-8', telefono: '987654321', id_ciudad: 1 }, { nombre: `Proveedor de Prueba Actualizado ${testSuffix}`, rut: '1234567-8', telefono: '987654321', id_ciudad: 2 }, 'id_proveedor'));
     results.push(await testCrud('Tipos de Cliente', '/tipos-cliente', { nombre_tipo: `Tipo de Prueba ${testSuffix}` }, { nombre_tipo: `Tipo de Prueba Actualizado ${testSuffix}` }, 'id_tipo_cliente'));
     results.push(await testCrud('Productos', '/products', { nombre: `Producto de Prueba ${testSuffix}`, categoria: 'Pruebas' }, { nombre: `Producto de Prueba Actualizado ${testSuffix}`, categoria: 'Pruebas', activo: false }, 'id_producto'));
     results.push(await testCrud('Ubicaciones', '/ubicaciones', { nombre: `Ubicación de Prueba ${testSuffix}`, tipo: 'Bodega', direccion: 'Fondo a la derecha', id_ciudad: 1 }, { nombre: `Ubicación de Prueba Actualizada ${testSuffix}`, tipo: 'Tienda', direccion: 'Fondo a la derecha', id_ciudad: 1 }, 'id_ubicacion'));
@@ -294,6 +294,17 @@ async function runAllTests() {
         { nombre_banco: `Banco Prueba ${testSuffix}`, tipo_cuenta: 'Corriente', numero_cuenta: `123456789${testSuffix}`, rut_titular: '11111111-1', nombre_titular: `Titular Prueba ${testSuffix}`, email_titular: `test${testSuffix}@example.com` }, 
         { nombre_banco: `Banco Actualizado ${testSuffix}`, tipo_cuenta: 'Ahorro', numero_cuenta: `987654321${testSuffix}`, rut_titular: '22222222-2', nombre_titular: `Titular Actualizado ${testSuffix}`, email_titular: `updated${testSuffix}@example.com` }, 
         'id_cuenta'
+    ));
+    results.push(await testCrud('Clientes', '/clients', 
+        { 
+            nombre: `Cliente Prueba ${testSuffix}`, 
+            telefono: `+569${Math.floor(10000000 + Math.random() * 90000000)}`
+        }, 
+        { 
+            nombre: `Cliente Actualizado ${testSuffix}`, 
+            telefono: `+569${Math.floor(10000000 + Math.random() * 90000000)}`
+        }, 
+        'id_cliente'
     ));
     results.push(await testPedidoToVentaWorkflow());
 
