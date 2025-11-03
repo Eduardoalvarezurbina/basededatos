@@ -72,6 +72,23 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
 
 ## 3. Historial de Cambios Detallado
 
+### Depuración del Backend y Detección de Problema de Entorno Docker
+- **Propósito:** Verificar y completar el CRUD de las APIs del backend, lo que llevó a descubrir un problema fundamental con la configuración de Docker.
+- **Acciones:**
+    1.  Se creó un script de prueba (`api_test.js`) para validar los endpoints de datos maestros.
+    2.  Las pruebas iniciales fallaron, revelando errores en el código: columnas incorrectas en la tabla `Proveedores` (`email`, `direccion`), falta de rutas `GET /:id` en `Productos`, `Ubicaciones` y `Tipos de Cliente`, y un bug de `client.release()` que causaba caídas del servidor.
+    3.  Se aplicaron múltiples correcciones al código del backend para solucionar estos errores a nivel de archivo.
+    4.  A pesar de las correcciones y de reiniciar el contenedor, los errores persistían idénticos, indicando que los cambios no se estaban aplicando.
+    5.  **Diagnóstico Final:** Se utilizó `docker inspect` y se descubrió que el contenedor se estaba ejecutando sin un **volumen de Docker** que sincronizara el código fuente del host con el del contenedor.
+    6.  **Estado Actual:** Pendiente de corregir el archivo `docker-compose.yml` en el directorio `trabajo/` para añadir el volumen necesario y permitir que los cambios en el código se reflejen en tiempo real en el contenedor.
+
+### Backend: Completitud del CRUD para Datos Maestros
+- **Propósito:** Asegurar que todas las entidades de datos maestros (no transaccionales) tuvieran una API completa para Crear, Leer, Actualizar y Borrar (CRUD), facilitando la administración y la corrección de datos.
+- **Acciones:**
+    1.  **Verificación:** Se auditó el backend y se confirmó que las entidades `Clientes`, `Ubicaciones`, `Tipos de Cliente` y `Productos` ya contaban con un CRUD completo.
+    2.  **Proveedores:** Se añadieron los endpoints `PUT /proveedores/:id` y `DELETE /proveedores/:id` que faltaban en el archivo `index.js`.
+    3.  **Formatos de Producto:** Se añadieron los endpoints `GET /formatos-producto`, `POST /formatos-producto` y `DELETE /formatos-producto/:id` en `index.js` para completar su CRUD.
+
 ### Base de Datos: Adición de Restricciones y Columnas
 - **Propósito:** Mejorar la integridad de los datos y la funcionalidad de los pedidos.
 - **Acciones:**

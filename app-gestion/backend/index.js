@@ -3,6 +3,11 @@ const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 
+const productsRouter = require('./routes/products');
+const ubicacionesRouter = require('./routes/ubicaciones');
+const tiposClienteRouter = require('./routes/tiposCliente');
+const inventarioRouter = require('./routes/inventario');
+
 const app = express();
 const port = 3001;
 
@@ -18,6 +23,11 @@ const pool = new Pool({
 
 app.use(cors());
 app.use(express.json());
+
+app.use('/products', productsRouter);
+app.use('/ubicaciones', ubicacionesRouter);
+app.use('/tipos-cliente', tiposClienteRouter);
+app.use('/inventario', inventarioRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello from the backend!');
@@ -49,166 +59,61 @@ app.post('/login', async (req, res) => {
 });
 
 
-app.get('/products', async (req, res) => {
+
+
+
+
+// GET /formatos-producto - Obtener todos los formatos de producto
+app.get('/formatos-producto', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM Productos ORDER BY id_producto');
+    const result = await pool.query(`
+      SELECT fp.*, p.nombre as nombre_producto
+      FROM Formatos_Producto fp
+      JOIN Productos p ON fp.id_producto = p.id_producto
+      ORDER BY p.nombre, fp.formato
+    `);
     res.json(result.rows);
   } catch (err) {
-    console.error(err);
+    console.error('Error getting product formats:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-app.post('/products', async (req, res) => {
-  const { nombre, categoria, unidad_medida } = req.body;
+// POST /formatos-producto - Crear un nuevo formato de producto
+app.post('/formatos-producto', async (req, res) => {
+  const { id_producto, formato, precio_detalle_neto, precio_mayorista_neto, ultimo_costo_neto, unidad_medida } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO Productos (nombre, categoria, unidad_medida) VALUES ($1, $2, $3) RETURNING *',
-      [nombre, categoria, unidad_medida]
+      'INSERT INTO Formatos_Producto (id_producto, formato, precio_detalle_neto, precio_mayorista_neto, ultimo_costo_neto, unidad_medida) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [id_producto, formato, precio_detalle_neto, precio_mayorista_neto, ultimo_costo_neto, unidad_medida]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Internal server error' });
+    console.error('Error creating product format:', err);
+    res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 });
 
-app.delete('/products/:id', async (req, res) => {
+// DELETE /formatos-producto/:id - Eliminar un formato de producto
+app.delete('/formatos-producto/:id', async (req, res) => {
   const { id } = req.params;
   try {
-    const result = await pool.query('DELETE FROM Productos WHERE id_producto = $1 RETURNING *', [id]);
+    // Importante: Considerar si se debe permitir borrar formatos usados en ventas, etc.
+    // Por ahora, se permite el borrado directo.
+    const result = await pool.query('DELETE FROM Formatos_Producto WHERE id_formato_producto = $1 RETURNING *', [id]);
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Product not found' });
+      return res.status(404).json({ message: 'Product format not found' });
     }
-    res.json({ message: 'Product deleted successfully', product: result.rows[0] });
+    res.json({ message: 'Product format deleted successfully', formato: result.rows[0] });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-app.put('/products/:id', async (req, res) => {
-  const { id } = req.params;
-  const { nombre, categoria, unidad_medida, activo } = req.body;
-  try {
-    const result = await pool.query(
-      'UPDATE Productos SET nombre = $1, categoria = $2, unidad_medida = $3, activo = $4 WHERE id_producto = $5 RETURNING *',
-      [nombre, categoria, unidad_medida, activo, id]
-    );
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Product not found' });
+    console.error('Error deleting product format:', err);
+    // Manejar error de FK si el formato está en uso
+    if (err.code === '23503') { // foreign_key_violation
+        return res.status(409).json({ message: 'Cannot delete this format because it is referenced by other records (e.g., inventory, sales).', error: err.detail });
     }
-    res.json({ message: 'Product updated successfully', product: result.rows[0] });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Internal server error' });
+    res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 });
-
-app.get('/products/active', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM Productos WHERE activo = TRUE ORDER BY nombre');
-    res.json(result.rows);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// --- Endpoints de Utilidad para Formularios ---
-
-// GET /ubicaciones - Obtener todas las ubicaciones de inventario
-app.get('/ubicaciones', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM Ubicaciones_Inventario ORDER BY nombre');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error getting locations:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// GET /formatos-producto - Obtener todos los formatos con nombre de producto
-app.get('/formatos-producto', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT fp.id_formato_producto, fp.formato, fp.precio_detalle_neto, fp.precio_mayorista_neto, p.nombre as nombre_producto
-      FROM Formatos_Producto fp
-      JOIN Productos p ON fp.id_producto = p.id_producto
-      WHERE p.activo = TRUE
-      ORDER BY p.nombre, fp.formato
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error getting product formats:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// --- Endpoints de Utilidad para Formularios ---
-
-// GET /ubicaciones - Obtener todas las ubicaciones de inventario
-app.get('/ubicaciones', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM Ubicaciones_Inventario ORDER BY nombre');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error getting locations:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// GET /formatos-producto - Obtener todos los formatos con nombre de producto
-app.get('/formatos-producto', async (req, res) => {
-  try {
-    const result = await pool.query(`
-      SELECT fp.id_formato_producto, fp.formato, fp.precio_detalle_neto, fp.precio_mayorista_neto, p.nombre as nombre_producto
-      FROM Formatos_Producto fp
-      JOIN Productos p ON fp.id_producto = p.id_producto
-      WHERE p.activo = TRUE
-      ORDER BY p.nombre, fp.formato
-    `);
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error getting product formats:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// GET /canales-compra - Obtener todos los canales de compra
-app.get('/canales-compra', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM Canales_Compra ORDER BY nombre_canal');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error getting purchase channels:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// GET /fuentes-contacto - Obtener todas las fuentes de contacto
-app.get('/fuentes-contacto', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM Fuentes_Contacto ORDER BY nombre_fuente');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error getting contact sources:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// GET /tipos-cliente - Obtener todos los tipos de cliente
-app.get('/tipos-cliente', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM Tipos_Cliente ORDER BY nombre_tipo');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error getting client types:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// --- Endpoints para Formatos de Producto y Historial de Precios ---
 
 // PUT /formatos-producto/:id - Actualizar un formato de producto y registrar cambios de precio
 app.put('/formatos-producto/:id', async (req, res) => {
@@ -758,7 +663,7 @@ app.delete('/reclamos/:id', async (req, res) => {
 
 // POST /pedidos - Agenda un pedido y descuenta el stock para reservar
 app.post('/pedidos', async (req, res) => {
-  const { id_cliente, id_trabajador, total, detalles } = req.body;
+  const { id_cliente, id_trabajador, total, fecha_entrega, detalles } = req.body;
   // 'detalles' es un array de { id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }
 
   if (!detalles || detalles.length === 0) {
@@ -771,8 +676,8 @@ app.post('/pedidos', async (req, res) => {
 
     // 1. Insertar en la tabla principal de Pedidos
     const pedidoResult = await client.query(
-      'INSERT INTO Pedidos (id_cliente, id_trabajador, total, estado, fecha) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING id_pedido',
-      [id_cliente, id_trabajador, total, 'Agendado']
+      'INSERT INTO Pedidos (id_cliente, id_trabajador, total, estado, fecha, fecha_entrega) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, $5) RETURNING id_pedido',
+      [id_cliente, id_trabajador, total, 'Agendado', fecha_entrega]
     );
     const newPedidoId = pedidoResult.rows[0].id_pedido;
 
@@ -874,7 +779,7 @@ app.post('/pedidos/:id/convertir-a-venta', async (req, res) => {
 app.get('/pedidos', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT p.id_pedido, p.fecha, p.estado, p.total, c.nombre as nombre_cliente
+      SELECT p.id_pedido, p.fecha, p.estado, p.total, p.fecha_entrega, c.nombre as nombre_cliente
       FROM Pedidos p
       LEFT JOIN Clientes c ON p.id_cliente = c.id_cliente
       ORDER BY p.fecha DESC
@@ -890,7 +795,7 @@ app.get('/pedidos', async (req, res) => {
 app.get('/pedidos/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const pedidoResult = await pool.query('SELECT * FROM Pedidos WHERE id_pedido = $1', [id]);
+        const pedidoResult = await pool.query('SELECT id_pedido, fecha, id_cliente, id_trabajador, estado, total, con_factura, fecha_entrega FROM Pedidos WHERE id_pedido = $1', [id]);
         if (pedidoResult.rowCount === 0) {
             return res.status(404).json({ message: 'Order not found' });
         }
@@ -904,56 +809,29 @@ app.get('/pedidos/:id', async (req, res) => {
     }
 });
 
-// POST /pedidos - Agenda un pedido y descuenta el stock para reservar
-app.post('/pedidos', async (req, res) => {
-  const { id_cliente, id_trabajador, total, detalles } = req.body;
-  // 'detalles' es un array de { id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }
+// PUT /pedidos/:id - Actualizar un pedido
+app.put('/pedidos/:id', async (req, res) => {
+  const { id } = req.params;
+  const { id_cliente, id_trabajador, total, estado, fecha_entrega } = req.body;
 
-  if (!detalles || detalles.length === 0) {
-    return res.status(400).json({ message: 'Order details cannot be empty' });
-  }
-
-  const client = await pool.connect();
   try {
-    await client.query('BEGIN');
-
-    // 1. Insertar en la tabla principal de Pedidos
-    const pedidoResult = await client.query(
-      'INSERT INTO Pedidos (id_cliente, id_trabajador, total, estado, fecha) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING id_pedido',
-      [id_cliente, id_trabajador, total, 'Agendado']
+    const result = await pool.query(
+      'UPDATE Pedidos SET id_cliente = $1, id_trabajador = $2, total = $3, estado = $4, fecha_entrega = $5 WHERE id_pedido = $6 RETURNING *',
+      [id_cliente, id_trabajador, total, estado, fecha_entrega, id]
     );
-    const newPedidoId = pedidoResult.rows[0].id_pedido;
-
-    // 2. Iterar sobre los detalles para insertarlos y descontar el inventario
-    for (const item of detalles) {
-      // 2a. Insertar en Detalle_Pedidos
-      await client.query(
-        'INSERT INTO Detalle_Pedidos (id_pedido, id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion) VALUES ($1, $2, $3, $4, $5, $6)',
-        [newPedidoId, item.id_formato_producto, item.cantidad, item.precio_unitario, item.id_lote, item.id_ubicacion]
-      );
-
-      // 2b. Descontar del inventario
-      const updateInventarioResult = await client.query(
-        'UPDATE Inventario SET stock_actual = stock_actual - $1, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_formato_producto = $2 AND id_ubicacion = $3 AND stock_actual >= $1',
-        [item.cantidad, item.id_formato_producto, item.id_ubicacion]
-      );
-      
-      if (updateInventarioResult.rowCount === 0) {
-        throw new Error(`Not enough stock for product format ${item.id_formato_producto} in location ${item.id_ubicacion}.`);
-      }
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Order not found' });
     }
-
-    await client.query('COMMIT');
-    res.status(201).json({ message: 'Order scheduled successfully', id_pedido: newPedidoId });
-
+    res.json({ message: 'Order updated successfully', pedido: result.rows[0] });
   } catch (err) {
-    await client.query('ROLLBACK');
-    console.error('Error scheduling order:', err);
+    console.error('Error updating order:', err);
     res.status(500).json({ message: 'Internal server error', error: err.message });
   } finally {
     client.release();
   }
 });
+
+
 
 // POST /pedidos/:id/convertir-a-venta - Convierte un pedido agendado en una venta final
 app.post('/pedidos/:id/convertir-a-venta', async (req, res) => {
@@ -1263,17 +1141,66 @@ app.get('/proveedores', async (req, res) => {
   }
 });
 
+// GET /proveedores/:id - Obtener un proveedor por ID
+app.get('/proveedores/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('SELECT * FROM Proveedores WHERE id_proveedor = $1', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Supplier not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error getting supplier by id:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // POST /proveedores - Crear un nuevo proveedor
 app.post('/proveedores', async (req, res) => {
-  const { nombre, rut, telefono, email, direccion } = req.body;
+  const { nombre, rut, telefono } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO Proveedores (nombre, rut, telefono, email, direccion) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-      [nombre, rut, telefono, email, direccion]
+      'INSERT INTO Proveedores (nombre, rut, telefono) VALUES ($1, $2, $3) RETURNING *',
+      [nombre, rut, telefono]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error creating supplier:', err);
+    res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+});
+
+// PUT /proveedores/:id - Actualizar un proveedor
+app.put('/proveedores/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nombre, rut, telefono } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE Proveedores SET nombre = $1, rut = $2, telefono = $3 WHERE id_proveedor = $4 RETURNING *',
+      [nombre, rut, telefono, id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Supplier not found' });
+    }
+    res.json({ message: 'Supplier updated successfully', proveedor: result.rows[0] });
+  } catch (err) {
+    console.error('Error updating supplier:', err);
+    res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+});
+
+// DELETE /proveedores/:id - Eliminar un proveedor
+app.delete('/proveedores/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM Proveedores WHERE id_proveedor = $1 RETURNING *', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Supplier not found' });
+    }
+    res.json({ message: 'Supplier deleted successfully', proveedor: result.rows[0] });
+  } catch (err) {
+    console.error('Error deleting supplier:', err);
     res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 });
