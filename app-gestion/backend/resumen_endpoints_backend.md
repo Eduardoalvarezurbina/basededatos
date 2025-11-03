@@ -276,8 +276,29 @@ Este documento lista todos los endpoints disponibles en el backend de la aplicac
 *   **GET /proveedores**
     *   **Descripción:** Obtiene todos los proveedores.
     *   **Respuesta:** `Array` de objetos `Proveedor`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /proveedores/:id**
+    *   **Descripción:** Obtiene un proveedor específico por su ID.
+    *   **Parámetros:** `id` (ID del proveedor).
+    *   **Respuesta:** Objeto `Proveedor`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
 
 *   **POST /proveedores**
     *   **Descripción:** Crea un nuevo proveedor.
-    *   **Body:** `{ nombre, rut, telefono, email, direccion }`
+    *   **Body:** `{ nombre, rut, telefono }`
     *   **Respuesta:** Objeto `Proveedor` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /proveedores/:id**
+    *   **Descripción:** Actualiza un proveedor existente por su ID.
+    *   **Parámetros:** `id` (ID del proveedor).
+    *   **Body:** `{ nombre, rut, telefono }`
+    *   **Respuesta:** `{ message: 'Supplier updated successfully', proveedor: updatedProveedor }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /proveedores/:id**
+    *   **Descripción:** Elimina un proveedor por su ID.
+    *   **Parámetros:** `id` (ID del proveedor).
+    *   **Respuesta:** `{ message: 'Supplier deleted successfully', proveedor: deletedProveedor }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
