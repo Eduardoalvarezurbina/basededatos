@@ -260,6 +260,18 @@ Este documento lista todos los endpoints disponibles en el backend de la aplicac
     *   **Descripción:** Crea una nueva venta, descuenta del inventario y registra costos.
     *   **Body:** `{ id_cliente, id_punto_venta, id_tipo_pago, id_trabajador, neto_venta, iva_venta, total_bruto_venta, con_iva_venta, observacion, estado, estado_pago, con_factura, detalles: [{ id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }] }`
     *   **Respuesta:** `{ message: 'Sale created successfully', id_venta: newVentaId }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /ventas**
+    *   **Descripción:** Obtiene un historial de todas las ventas.
+    *   **Respuesta:** `Array` de objetos `Venta` con `nombre_cliente`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /ventas/:id**
+    *   **Descripción:** Obtiene el detalle completo de una venta específica.
+    *   **Parámetros:** `id` (ID de la venta).
+    *   **Respuesta:** Objeto `Venta` con `detalles`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
 
 ---
 

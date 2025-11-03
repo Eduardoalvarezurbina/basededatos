@@ -1084,13 +1084,80 @@ app.put('/compras/:id', async (req, res) => {
   }
 });
 
+// --- Endpoints para Ventas ---
+
+// GET /ventas - Obtener un historial de todas las ventas
+app.get('/ventas', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        v.id_venta, v.fecha, v.total_bruto_venta, v.estado, v.estado_pago,
+        c.nombre as nombre_cliente
+      FROM Ventas v
+      LEFT JOIN Clientes c ON v.id_cliente = c.id_cliente
+      ORDER BY v.fecha DESC, v.hora DESC
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error getting sales history:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// GET /ventas/:id - Obtener el detalle completo de una venta
+app.get('/ventas/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Consulta para la cabecera de la venta
+    const ventaResult = await pool.query(`
+      SELECT 
+        v.*, 
+        c.nombre as nombre_cliente, c.telefono as telefono_cliente, c.email as email_cliente,
+        pv.nombre as nombre_punto_venta,
+        tp.nombre_tipo_pago
+      FROM Ventas v
+      LEFT JOIN Clientes c ON v.id_cliente = c.id_cliente
+      LEFT JOIN Puntos_Venta pv ON v.id_punto_venta = pv.id_punto_venta
+      LEFT JOIN Tipos_Pago tp ON v.id_tipo_pago = tp.id_tipo_pago
+      WHERE v.id_venta = $1
+    `, [id]);
+
+    if (ventaResult.rowCount === 0) {
+      return res.status(404).json({ message: 'Sale not found' });
+    }
+
+    // Consulta para los detalles de la venta
+    const detallesResult = await pool.query(`
+      SELECT
+        dv.cantidad, dv.precio_unitario, dv.costo_unitario_en_venta,
+        fp.formato as formato_producto,
+        p.nombre as nombre_producto,
+        lp.codigo_lote
+      FROM Detalle_Ventas dv
+      JOIN Formatos_Producto fp ON dv.id_formato_producto = fp.id_formato_producto
+      JOIN Productos p ON fp.id_producto = p.id_producto
+      LEFT JOIN Lotes_Produccion lp ON dv.id_lote = lp.id_lote
+      WHERE dv.id_venta = $1
+    `, [id]);
+
+    const venta = ventaResult.rows[0];
+    venta.detalles = detallesResult.rows;
+
+    res.json(venta);
+
+  } catch (err) {
+    console.error(`Error getting sale details for id ${id}:`, err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
 // POST /ventas - Crear una nueva venta, descontar de inventario y registrar costos
 app.post('/ventas', async (req, res) => {
   // El body debe incluir datos de la venta y un array de 'detalles'
-  const { 
-    id_cliente, id_punto_venta, id_tipo_pago, id_trabajador, 
-    neto_venta, iva_venta, total_bruto_venta, con_iva_venta, 
-    observacion, estado, estado_pago, con_factura, detalles 
+  const {
+    id_cliente, id_punto_venta, id_tipo_pago, id_trabajador,
+    neto_venta, iva_venta, total_bruto_venta, con_iva_venta,
+    observacion, estado, estado_pago, con_factura, detalles
   } = req.body;
   // Cada item en 'detalles' debe ser: { id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }
 
@@ -1157,7 +1224,6 @@ app.post('/ventas', async (req, res) => {
     client.release();
   }
 });
-
 app.get('/clients', async (req, res) => {
   try {
     const result = await pool.query(`

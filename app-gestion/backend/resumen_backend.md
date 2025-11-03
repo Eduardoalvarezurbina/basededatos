@@ -47,11 +47,13 @@ El backend es el **cerebro y el intermediario** del sistema. No almacena datos, 
     - `DELETE /compras/:id`: Elimina una compra y revierte el inventario.
 
 ### Flujo de Pedido a Venta (`/pedidos`, `/ventas`)
-- **Propósito:** Manejar el ciclo de vida completo de una venta, desde el agendamiento hasta la concreción.
+- **Propósito:** Manejar el ciclo de vida completo de una venta, desde el agendamiento hasta la concreción y consulta.
 - **Endpoints:**
     - `POST /pedidos`: Agenda un pedido y reserva el stock.
     - `POST /pedidos/:id/convertir-a-venta`: Transforma un pedido en una venta final.
     - `POST /ventas`: Para ventas directas que no requieren agendamiento.
+    - `GET /ventas`: Obtiene un historial de todas las ventas.
+    - `GET /ventas/:id`: Obtiene el detalle completo de una venta específica.
 
 ### Flujo de Producción en Dos Pasos (`/produccion`)
 - **Propósito:** Reflejar el trabajo diario de producción.

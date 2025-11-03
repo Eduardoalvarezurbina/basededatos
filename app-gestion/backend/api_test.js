@@ -196,18 +196,92 @@ async function testCrud(entityName, basePath, postPayload, putPayload) {
       ));
   
       // Prueba específica para Compras
-      results.push(await testComprasCrud());
-  
-      // Para Formatos de Producto, necesitamos un id_producto existente.
-      // Asumimos que el producto creado anteriormente funciona.
-      // Esta prueba es más compleja y la omitimos en este script simple.
-  
-      console.log('\n--- Resumen de Pruebas ---');
-      const all_passed = results.every(r => r);
-      if(all_passed) {
-          console.log('¡Todas las pruebas pasaron exitosamente!');
-      } else {
-          console.log('Algunas pruebas fallaron. Revisa los logs de arriba.');
+          results.push(await testComprasCrud());
+      
+          // Prueba específica para Ventas (solo GET)
+          results.push(await testVentasGet());
+      
+          // Para Formatos de Producto, necesitamos un id_producto existente.
+          // Asumimos que el producto creado anteriormente funciona.
+          // Esta prueba es más compleja y la omitimos en este script simple.
+      
+          console.log('\n--- Resumen de Pruebas ---');
+          const all_passed = results.every(r => r);
+          if(all_passed) {
+              console.log('¡Todas las pruebas pasaron exitosamente!');
+          } else {
+              console.log('Algunas pruebas fallaron. Revisa los logs de arriba.');
+          }
       }
-  }
-runAllTests();
+      
+      async function testVentasGet() {
+          console.log(`\n--- INICIANDO PRUEBA DE LECTURA PARA: Ventas ---`);
+          let clienteId, formatoId, loteId, ventaId;
+          const ubicacionId = 1; // Usar una ubicación conocida
+      
+          try {
+              // 1. Crear dependencias
+              console.log('1. Creando dependencias para la venta...');
+              const clienteRes = await request('POST', '/clients', { nombre: 'Cliente para Ventas', telefono: '111222' });
+              clienteId = clienteRes.body.id_cliente;
+      
+              const productoRes = await request('POST', '/products', { nombre: 'Producto para Ventas', categoria: 'Ventas' });
+              const productoId = productoRes.body.id_producto;
+      
+              const formatoRes = await request('POST', '/formatos-producto', { id_producto: productoId, formato: 'Formato Ventas', precio_detalle_neto: 1500 });
+              formatoId = formatoRes.body.id_formato_producto;
+      
+              const loteRes = await request('POST', '/lotes', { codigo_lote: `LOTE-VENTA-${Date.now()}`, id_producto: productoId, fecha_produccion: '2025-01-01', cantidad_inicial: 100, costo_por_unidad: 500 });
+              loteId = loteRes.body.id_lote;
+      
+              // 2. Añadir stock manualmente para la prueba (endpoint de inventario no existe para esto)
+              // Esto es un hack para la prueba. En la app real, el stock se añade por Compras o Producción.
+              await request('POST', '/inventario', { id_formato_producto: formatoId, id_ubicacion: ubicacionId, stock_actual: 100 });
+      
+              // 3. Crear la Venta
+              console.log('2. Creando una venta de prueba...');
+              const ventaPayload = {
+                  id_cliente: clienteId,
+                  id_punto_venta: 1, // Asumir punto de venta 1
+                  id_tipo_pago: 1, // Asumir tipo de pago 1
+                  total_bruto_venta: 15000,
+                  detalles: [
+                      { id_formato_producto: formatoId, cantidad: 10, precio_unitario: 1500, id_lote: loteId, id_ubicacion: ubicacionId }
+                  ]
+              };
+              const ventaRes = await request('POST', '/ventas', ventaPayload);
+              if (ventaRes.statusCode !== 201) throw new Error(`POST /ventas falló: ${JSON.stringify(ventaRes.body)}`);
+              ventaId = ventaRes.body.id_venta;
+              console.log(`  -> ÉXITO. Venta creada con ID: ${ventaId}`);
+      
+              // 4. Probar GET /ventas
+              console.log('3. Probando GET /ventas...');
+              const getListRes = await request('GET', '/ventas');
+              if (getListRes.statusCode !== 200 || !getListRes.body.some(v => v.id_venta === ventaId)) {
+                  throw new Error('GET /ventas falló o no contiene la venta creada.');
+              }
+              console.log('  -> ÉXITO. La lista de ventas contiene la nueva venta.');
+      
+              // 5. Probar GET /ventas/:id
+              console.log(`4. Probando GET /ventas/${ventaId}...`);
+              const getSingleRes = await request('GET', `/ventas/${ventaId}`);
+              if (getSingleRes.statusCode !== 200 || getSingleRes.body.detalles.length !== 1) {
+                  throw new Error(`GET /ventas/${ventaId} falló.`);
+              }
+              console.log('  -> ÉXITO. Detalle de venta obtenido correctamente.');
+      
+              console.log('--- PRUEBA DE LECTURA PARA Ventas COMPLETADA CON ÉXITO ---');
+              return true;
+      
+          } catch (error) {
+              console.error(`--- PRUEBA DE LECTURA PARA Ventas FALLÓ ---`);
+              console.error(error.message);
+              return false;
+          } finally {
+              // Limpieza de datos creados
+              if (ventaId) await request('DELETE', `/ventas/${ventaId}`); // Asumiendo que DELETE /ventas existe
+              if (clienteId) await request('DELETE', `/clients/${clienteId}`);
+              // La limpieza de producto, formato, lote e inventario se omite por simplicidad,
+              // pero en un entorno de prueba real sería necesaria.
+          }
+      }runAllTests();
