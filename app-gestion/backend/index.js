@@ -7,6 +7,9 @@ const productsRouter = require('./routes/products');
 const ubicacionesRouter = require('./routes/ubicaciones');
 const tiposClienteRouter = require('./routes/tiposCliente');
 const inventarioRouter = require('./routes/inventario');
+const ciudadesRouter = require('./routes/ciudades');
+const tiposPagoRouter = require('./routes/tiposPago');
+const fuentesContactoRouter = require('./routes/fuentesContacto');
 
 const app = express();
 const port = 3001;
@@ -28,6 +31,9 @@ app.use('/products', productsRouter);
 app.use('/ubicaciones', ubicacionesRouter);
 app.use('/tipos-cliente', tiposClienteRouter);
 app.use('/inventario', inventarioRouter);
+app.use('/ciudades', ciudadesRouter);
+app.use('/tipos-pago', tiposPagoRouter);
+app.use('/fuentes-contacto', fuentesContactoRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello from the backend!');
@@ -1146,8 +1152,70 @@ app.get('/ventas/:id', async (req, res) => {
     res.json(venta);
 
   } catch (err) {
-    console.error(`Error getting sale details for id ${id}:`, err);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// DELETE /ventas/:id - Eliminar una venta y revertir el inventario
+app.delete('/ventas/:id', async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Obtener los detalles de la venta para saber qué revertir
+    const detallesResult = await client.query('SELECT * FROM Detalle_Ventas WHERE id_venta = $1', [id]);
+    const detalles = detallesResult.rows;
+
+    if (detalles.length === 0) {
+      const ventaExistResult = await client.query('SELECT 1 FROM Ventas WHERE id_venta = $1', [id]);
+      if (ventaExistResult.rowCount === 0) {
+        throw new Error('Sale not found');
+      }
+    }
+
+    // 2. Revertir el inventario por cada detalle
+    for (const item of detalles) {
+      // Para la reversión, necesitamos la ubicación que se usó en el pedido original.
+      // Esta información no está en Detalle_Ventas. Asumiremos la ubicación del detalle del pedido si existe,
+      // o una ubicación por defecto. ESTO ES UNA LIMITACIÓN IMPORTANTE.
+      const detallePedidoResult = await client.query('SELECT id_ubicacion FROM Detalle_Pedidos WHERE id_formato_producto = $1 AND id_pedido = (SELECT id_pedido FROM Pedidos WHERE id_venta_asociada = $2)', [item.id_formato_producto, id]);
+      const id_ubicacion = detallePedidoResult.rowCount > 0 ? detallePedidoResult.rows[0].id_ubicacion : 1; // Fallback a Bodega Principal
+
+      const updateInventarioResult = await client.query(
+        'UPDATE Inventario SET stock_actual = stock_actual + $1 WHERE id_formato_producto = $2 AND id_ubicacion = $3',
+        [item.cantidad, item.id_formato_producto, id_ubicacion]
+      );
+
+      if (updateInventarioResult.rowCount === 0) {
+        // Si no hay fila para actualizar, significa que el producto no está en esa ubicación, lo cual es un estado inconsistente.
+        // Creamos la fila de inventario para corregir.
+        await client.query('INSERT INTO Inventario (id_formato_producto, id_ubicacion, stock_actual) VALUES ($1, $2, $3)', [item.id_formato_producto, id_ubicacion, item.cantidad]);
+      }
+    }
+
+    // 3. Eliminar los detalles de la venta
+    await client.query('DELETE FROM Detalle_Ventas WHERE id_venta = $1', [id]);
+
+    // 4. Eliminar la venta principal
+    const deleteVentaResult = await client.query('DELETE FROM Ventas WHERE id_venta = $1 RETURNING *', [id]);
+
+    if (deleteVentaResult.rowCount === 0) {
+        throw new Error('Sale not found');
+    }
+
+    await client.query('COMMIT');
+    res.json({ message: 'Sale deleted and inventory rolled back successfully', venta: deleteVentaResult.rows[0] });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error deleting sale:', err);
+    if (err.message === 'Sale not found') {
+        return res.status(404).json({ message: err.message });
+    }
+    res.status(500).json({ message: 'Internal server error', error: err.message });
+  } finally {
+    client.release();
   }
 });
 

@@ -323,6 +323,109 @@ Este documento lista todos los endpoints disponibles en el backend de la aplicac
     *   **Respuesta:** Objeto `Proveedor` creado.
     *   **Test Status:** **OK** - Tested with `api_test.js`.
 
+---
+
+## Ciudades
+
+*   **GET /ciudades**
+    *   **Descripción:** Obtiene todas las ciudades.
+    *   **Respuesta:** `Array` de objetos `Ciudad`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /ciudades/:id**
+    *   **Descripción:** Obtiene una ciudad por su ID.
+    *   **Parámetros:** `id` (ID de la ciudad).
+    *   **Respuesta:** Objeto `Ciudad`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /ciudades**
+    *   **Descripción:** Crea una nueva ciudad.
+    *   **Body:** `{ nombre_ciudad }`
+    *   **Respuesta:** Objeto `Ciudad` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /ciudades/:id**
+    *   **Descripción:** Actualiza una ciudad existente.
+    *   **Parámetros:** `id` (ID de la ciudad).
+    *   **Body:** `{ nombre_ciudad }`
+    *   **Respuesta:** `{ message: 'City updated successfully', ciudad: updatedCiudad }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /ciudades/:id**
+    *   **Descripción:** Elimina una ciudad.
+    *   **Parámetros:** `id` (ID de la ciudad).
+    *   **Respuesta:** `{ message: 'City deleted successfully', ciudad: deletedCiudad }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Tipos de Pago
+
+*   **GET /tipos-pago**
+    *   **Descripción:** Obtiene todos los tipos de pago.
+    *   **Respuesta:** `Array` de objetos `Tipo_Pago`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /tipos-pago/:id**
+    *   **Descripción:** Obtiene un tipo de pago por su ID.
+    *   **Parámetros:** `id` (ID del tipo de pago).
+    *   **Respuesta:** Objeto `Tipo_Pago`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /tipos-pago**
+    *   **Descripción:** Crea un nuevo tipo de pago.
+    *   **Body:** `{ nombre_tipo_pago }`
+    *   **Respuesta:** Objeto `Tipo_Pago` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /tipos-pago/:id**
+    *   **Descripción:** Actualiza un tipo de pago existente.
+    *   **Parámetros:** `id` (ID del tipo de pago).
+    *   **Body:** `{ nombre_tipo_pago }`
+    *   **Respuesta:** `{ message: 'Payment type updated successfully', tipo_pago: updatedTipoPago }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /tipos-pago/:id**
+    *   **Descripción:** Elimina un tipo de pago.
+    *   **Parámetros:** `id` (ID del tipo de pago).
+    *   **Respuesta:** `{ message: 'Payment type deleted successfully', tipo_pago: deletedTipoPago }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Fuentes de Contacto
+
+*   **GET /fuentes-contacto**
+    *   **Descripción:** Obtiene todas las fuentes de contacto.
+    *   **Respuesta:** `Array` de objetos `Fuente_Contacto`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /fuentes-contacto/:id**
+    *   **Descripción:** Obtiene una fuente de contacto por su ID.
+    *   **Parámetros:** `id` (ID de la fuente de contacto).
+    *   **Respuesta:** Objeto `Fuente_Contacto`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /fuentes-contacto**
+    *   **Descripción:** Crea una nueva fuente de contacto.
+    *   **Body:** `{ nombre_fuente }`
+    *   **Respuesta:** Objeto `Fuente_Contacto` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /fuentes-contacto/:id**
+    *   **Descripción:** Actualiza una fuente de contacto existente.
+    *   **Parámetros:** `id` (ID de la fuente de contacto).
+    *   **Body:** `{ nombre_fuente }`
+    *   **Respuesta:** `{ message: 'Contact source updated successfully', fuente_contacto: updatedFuenteContacto }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /fuentes-contacto/:id**
+    *   **Descripción:** Elimina una fuente de contacto.
+    *   **Parámetros:** `id` (ID de la fuente de contacto).
+    *   **Respuesta:** `{ message: 'Contact source deleted successfully', fuente_contacto: deletedFuenteContacto }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
 *   **PUT /proveedores/:id**
     *   **Descripción:** Actualiza un proveedor existente por su ID.
     *   **Parámetros:** `id` (ID del proveedor).

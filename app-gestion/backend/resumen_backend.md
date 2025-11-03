@@ -70,3 +70,10 @@ El backend es el **cerebro y el intermediario** del sistema. No almacena datos, 
     - `GET /clientes/buscar`
     - `GET /fuentes-contacto`
     - `GET /tipos-cliente`
+
+### Gestión de Catálogos
+- **Propósito:** Administrar las tablas de apoyo del sistema (listas de opciones).
+- **Endpoints:**
+    - CRUD completo para `/ciudades`.
+    - CRUD completo para `/tipos-pago`.
+    - CRUD completo para `/fuentes-contacto`.
