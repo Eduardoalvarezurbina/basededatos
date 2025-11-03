@@ -15,6 +15,10 @@ const trabajadoresRouter = require('./routes/trabajadores');
 const regionesRouter = require('./routes/regiones');
 const comunasRouter = require('./routes/comunas');
 const categoriasClienteRouter = require('./routes/categoriasCliente');
+const clasificacionesClienteRouter = require('./routes/clasificacionesCliente');
+const frecuenciasCompraRouter = require('./routes/frecuenciasCompra');
+const tiposConsumoRouter = require('./routes/tiposConsumo');
+const cuentasBancariasRouter = require('./routes/cuentasBancarias');
 
 const app = express();
 const port = 3001;
@@ -44,6 +48,10 @@ app.use('/trabajadores', trabajadoresRouter);
 app.use('/regiones', regionesRouter);
 app.use('/comunas', comunasRouter);
 app.use('/categorias-cliente', categoriasClienteRouter);
+app.use('/clasificaciones-cliente', clasificacionesClienteRouter);
+app.use('/frecuencias-compra', frecuenciasCompraRouter);
+app.use('/tipos-consumo', tiposConsumoRouter);
+app.use('/cuentas-bancarias', cuentasBancariasRouter);
 
 app.get('/', (req, res) => {
   res.send('Hello from the backend!');
@@ -254,22 +262,6 @@ app.put('/lotes/:id', async (req, res) => {
     res.json({ message: 'Lot updated successfully', lot: result.rows[0] });
   } catch (err) {
     console.error('Error updating lot:', err);
-    res.status(500).json({ message: 'Internal server error', error: err.message });
-  }
-});
-
-// DELETE /lotes/:id - Eliminar un lote
-app.delete('/lotes/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    // Opcional: Se podría verificar si el lote está en uso antes de borrar.
-    const result = await pool.query('DELETE FROM Lotes_Produccion WHERE id_lote = $1 RETURNING *', [id]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Lot not found' });
-    }
-    res.json({ message: 'Lot deleted successfully', lot: result.rows[0] });
-  } catch (err) {
-    console.error('Error deleting lot:', err);
     res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 });
@@ -751,7 +743,7 @@ app.post('/pedidos/:id/convertir-a-venta', async (req, res) => {
         const ventaResult = await client.query(
             `INSERT INTO Ventas (id_cliente, id_punto_venta, id_tipo_pago, id_trabajador, neto_venta, iva_venta, total_bruto_venta, con_iva_venta, observacion, estado, estado_pago, con_factura, fecha, hora) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_DATE, CURRENT_TIME) RETURNING id_venta`,
-            [pedido.id_cliente, id_punto_venta, id_tipo_pago, pedido.id_trabajador, neto_venta, iva_venta, total_bruto_venta, con_factura, 'Finalizada', estado_pago, con_factura, observacion]
+            [pedido.id_cliente, id_punto_venta, id_tipo_pago, pedido.id_trabajador, neto_venta, iva_venta, total_bruto_venta, true, observacion, 'Finalizada', estado_pago, con_factura]
         );
         const newVentaId = ventaResult.rows[0].id_venta;
 
@@ -830,87 +822,31 @@ app.put('/pedidos/:id', async (req, res) => {
   const { id } = req.params;
   const { id_cliente, id_trabajador, total, estado, fecha_entrega } = req.body;
 
+  const client = await pool.connect();
   try {
-    const result = await pool.query(
+    await client.query('BEGIN');
+
+    const result = await client.query(
       'UPDATE Pedidos SET id_cliente = $1, id_trabajador = $2, total = $3, estado = $4, fecha_entrega = $5 WHERE id_pedido = $6 RETURNING *',
       [id_cliente, id_trabajador, total, estado, fecha_entrega, id]
     );
     if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Order not found' });
+      throw new Error('Order not found');
     }
+
+    await client.query('COMMIT');
     res.json({ message: 'Order updated successfully', pedido: result.rows[0] });
   } catch (err) {
+    await client.query('ROLLBACK');
     console.error('Error updating order:', err);
+    if (err.message === 'Order not found') {
+      return res.status(404).json({ message: err.message });
+    }
     res.status(500).json({ message: 'Internal server error', error: err.message });
   } finally {
     client.release();
   }
-});
-
-
-
-// POST /pedidos/:id/convertir-a-venta - Convierte un pedido agendado en una venta final
-app.post('/pedidos/:id/convertir-a-venta', async (req, res) => {
-    const { id } = req.params;
-    const { id_punto_venta, id_tipo_pago, con_factura, neto_venta, iva_venta, total_bruto_venta, estado_pago, observacion } = req.body;
-
-    const client = await pool.connect();
-    try {
-        await client.query('BEGIN');
-
-        // 1. Obtener datos del pedido y sus detalles
-        const pedidoResult = await client.query('SELECT * FROM Pedidos WHERE id_pedido = $1 AND estado = \'Agendado\'', [id]);
-        if (pedidoResult.rowCount === 0) {
-            throw new Error('Order not found or already processed.');
-        }
-        const pedido = pedidoResult.rows[0];
-
-        const detallesPedidoResult = await client.query('SELECT * FROM Detalle_Pedidos WHERE id_pedido = $1', [id]);
-        const detallesPedido = detallesPedidoResult.rows;
-
-        // 2. Crear el registro de Venta
-        const ventaResult = await client.query(
-            `INSERT INTO Ventas (id_cliente, id_punto_venta, id_tipo_pago, id_trabajador, neto_venta, iva_venta, total_bruto_venta, con_iva_venta, observacion, estado, estado_pago, con_factura, fecha, hora) 
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_DATE, CURRENT_TIME) RETURNING id_venta`,
-            [pedido.id_cliente, id_punto_venta, id_tipo_pago, pedido.id_trabajador, neto_venta, iva_venta, total_bruto_venta, con_factura, 'Finalizada', estado_pago, con_factura, observacion]
-        );
-        const newVentaId = ventaResult.rows[0].id_venta;
-
-        // 3. Crear los detalles de la venta, ahora con la información correcta
-        for (const detalle of detallesPedido) {
-            const loteResult = await client.query('SELECT costo_por_unidad FROM Lotes_Produccion WHERE id_lote = $1', [detalle.id_lote]);
-            if (loteResult.rowCount === 0) {
-                throw new Error(`Lot with id ${detalle.id_lote} not found for product in order.`);
-            }
-            const costoUnitario = loteResult.rows[0].costo_por_unidad;
-
-            await client.query(
-                'INSERT INTO Detalle_Ventas (id_venta, id_formato_producto, cantidad, precio_unitario, id_lote, costo_unitario_en_venta) VALUES ($1, $2, $3, $4, $5, $6)',
-                [newVentaId, detalle.id_formato_producto, detalle.cantidad, detalle.precio_unitario, detalle.id_lote, costoUnitario]
-            );
-        }
-        
-        // 4. Actualizar la fecha de última compra del cliente
-        if (pedido.id_cliente) {
-            await client.query('UPDATE Clientes SET fecha_ultima_compra = CURRENT_DATE WHERE id_cliente = $1', [pedido.id_cliente]);
-        }
-
-        // 5. Actualizar estado del pedido
-        await client.query('UPDATE Pedidos SET estado = \'Convertido a Venta\' WHERE id_pedido = $1', [id]);
-
-        await client.query('COMMIT');
-        res.status(201).json({ message: 'Order converted to sale successfully', id_venta: newVentaId });
-
-    } catch (err) {
-        await client.query('ROLLBACK');
-        console.error('Error converting order to sale:', err);
-        res.status(500).json({ message: 'Internal server error', error: err.message });
-    } finally {
-        client.release();
-    }
-});
-
-// --- Endpoints para Compras ---
+});// --- Endpoints para Compras ---
 
 // GET /compras - Obtener todas las compras con sus detalles
 app.get('/compras', async (req, res) => {

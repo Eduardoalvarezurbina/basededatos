@@ -594,6 +594,142 @@ Este documento lista todos los endpoints disponibles en el backend de la aplicac
     *   **Parámetros:** `id` (ID de la categoría de cliente).
     *   **Respuesta:** `{ message: 'Client category deleted successfully', categoria_cliente: deletedCategoriaCliente }`
     *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Clasificaciones de Cliente
+
+*   **GET /clasificaciones-cliente**
+    *   **Descripción:** Obtiene todas las clasificaciones de cliente.
+    *   **Respuesta:** `Array` de objetos `Clasificacion_Cliente`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /clasificaciones-cliente/:id**
+    *   **Descripción:** Obtiene una clasificación de cliente por su ID.
+    *   **Parámetros:** `id` (ID de la clasificación de cliente).
+    *   **Respuesta:** Objeto `Clasificacion_Cliente`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /clasificaciones-cliente**
+    *   **Descripción:** Crea una nueva clasificación de cliente.
+    *   **Body:** `{ nombre_clasificacion }`
+    *   **Respuesta:** Objeto `Clasificacion_Cliente` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /clasificaciones-cliente/:id**
+    *   **Descripción:** Actualiza una clasificación de cliente existente.
+    *   **Parámetros:** `id` (ID de la clasificación de cliente).
+    *   **Body:** `{ nombre_clasificacion }`
+    *   **Respuesta:** `{ message: 'Client classification updated successfully', clasificacion_cliente: updatedClasificacionCliente }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /clasificaciones-cliente/:id**
+    *   **Descripción:** Elimina una clasificación de cliente.
+    *   **Parámetros:** `id` (ID de la clasificación de cliente).
+    *   **Respuesta:** `{ message: 'Client classification deleted successfully', clasificacion_cliente: deletedClasificacionCliente }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Frecuencias de Compra
+
+*   **GET /frecuencias-compra**
+    *   **Descripción:** Obtiene todas las frecuencias de compra.
+    *   **Respuesta:** `Array` de objetos `Frecuencia_Compra`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /frecuencias-compra/:id**
+    *   **Descripción:** Obtiene una frecuencia de compra por su ID.
+    *   **Parámetros:** `id` (ID de la frecuencia de compra).
+    *   **Respuesta:** Objeto `Frecuencia_Compra`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /frecuencias-compra**
+    *   **Descripción:** Crea una nueva frecuencia de compra.
+    *   **Body:** `{ nombre_frecuencia }`
+    *   **Respuesta:** Objeto `Frecuencia_Compra` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /frecuencias-compra/:id**
+    *   **Descripción:** Actualiza una frecuencia de compra existente.
+    *   **Parámetros:** `id` (ID de la frecuencia de compra).
+    *   **Body:** `{ nombre_frecuencia }`
+    *   **Respuesta:** `{ message: 'Purchase frequency updated successfully', frecuencia_compra: updatedFrecuenciaCompra }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /frecuencias-compra/:id**
+    *   **Descripción:** Elimina una frecuencia de compra.
+    *   **Parámetros:** `id` (ID de la frecuencia de compra).
+    *   **Respuesta:** `{ message: 'Purchase frequency deleted successfully', frecuencia_compra: deletedFrecuenciaCompra }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Tipos de Consumo
+
+*   **GET /tipos-consumo**
+    *   **Descripción:** Obtiene todos los tipos de consumo.
+    *   **Respuesta:** `Array` de objetos `Tipo_Consumo`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /tipos-consumo/:id**
+    *   **Descripción:** Obtiene un tipo de consumo por su ID.
+    *   **Parámetros:** `id` (ID del tipo de consumo).
+    *   **Respuesta:** Objeto `Tipo_Consumo`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /tipos-consumo**
+    *   **Descripción:** Crea un nuevo tipo de consumo.
+    *   **Body:** `{ nombre_tipo }`
+    *   **Respuesta:** Objeto `Tipo_Consumo` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /tipos-consumo/:id**
+    *   **Descripción:** Actualiza un tipo de consumo existente.
+    *   **Parámetros:** `id` (ID del tipo de consumo).
+    *   **Body:** `{ nombre_tipo }`
+    *   **Respuesta:** `{ message: 'Consumption type updated successfully', tipo_consumo: updatedTipoConsumo }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /tipos-consumo/:id**
+    *   **Descripción:** Elimina un tipo de consumo.
+    *   **Parámetros:** `id` (ID del tipo de consumo).
+    *   **Respuesta:** `{ message: 'Consumption type deleted successfully', tipo_consumo: deletedTipoConsumo }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+---
+
+## Cuentas Bancarias
+
+*   **GET /cuentas-bancarias**
+    *   **Descripción:** Obtiene todas las cuentas bancarias.
+    *   **Respuesta:** `Array` de objetos `Cuenta_Bancaria`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **GET /cuentas-bancarias/:id**
+    *   **Descripción:** Obtiene una cuenta bancaria por su ID.
+    *   **Parámetros:** `id` (ID de la cuenta bancaria).
+    *   **Respuesta:** Objeto `Cuenta_Bancaria`.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **POST /cuentas-bancarias**
+    *   **Descripción:** Crea una nueva cuenta bancaria.
+    *   **Body:** `{ nombre_banco, tipo_cuenta, numero_cuenta, rut_titular, nombre_titular, email_titular }`
+    *   **Respuesta:** Objeto `Cuenta_Bancaria` creado.
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **PUT /cuentas-bancarias/:id**
+    *   **Descripción:** Actualiza una cuenta bancaria existente.
+    *   **Parámetros:** `id` (ID de la cuenta bancaria).
+    *   **Body:** `{ nombre_banco, tipo_cuenta, numero_cuenta, rut_titular, nombre_titular, email_titular }`
+    *   **Respuesta:** `{ message: 'Bank account updated successfully', cuenta_bancaria: updatedCuentaBancaria }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
+
+*   **DELETE /cuentas-bancarias/:id**
+    *   **Descripción:** Elimina una cuenta bancaria.
+    *   **Parámetros:** `id` (ID de la cuenta bancaria).
+    *   **Respuesta:** `{ message: 'Bank account deleted successfully', cuenta_bancaria: deletedCuentaBancaria }`
+    *   **Test Status:** **OK** - Tested with `api_test.js`.
     *   **Test Status:** **OK** - Tested with `api_test.js`.
 
 *   **PUT /proveedores/:id**

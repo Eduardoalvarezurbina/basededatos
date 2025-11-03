@@ -162,302 +162,140 @@ async function testComprasCrud() {
     }
 }
 
-async function testVentasGet() {
-
-    console.log(`\n--- INICIANDO PRUEBA DE LECTURA PARA: Ventas ---`);
-
-    let clienteId, formatoId, loteId, ventaId;
-
-    const ubicacionId = 1; // Usar una ubicación conocida
-
-
-
-    try {
-
-        // 1. Crear dependencias
-
-        console.log('1. Creando dependencias para la venta...');
-
-        const clienteRes = await request('POST', '/clients', { nombre: 'Cliente para Ventas', telefono: '111222' });
-
-        clienteId = clienteRes.body.id_cliente;
-
-
-
-        const productoRes = await request('POST', '/products', { nombre: 'Producto para Ventas', categoria: 'Ventas' });
-
-        const productoId = productoRes.body.id_producto;
-
-
-
-        const formatoRes = await request('POST', '/formatos-producto', { id_producto: productoId, formato: 'Formato Ventas', precio_detalle_neto: 1500 });
-
-        formatoId = formatoRes.body.id_formato_producto;
-
-
-
-        const loteRes = await request('POST', '/lotes', { codigo_lote: `LOTE-VENTA-${Date.now()}`, id_producto: productoId, fecha_produccion: '2025-01-01', cantidad_inicial: 100, costo_por_unidad: 500 });
-
-        loteId = loteRes.body.id_lote;
-
-
-
-        // 2. Añadir stock manualmente para la prueba
-
-        await request('POST', '/inventario', { id_formato_producto: formatoId, id_ubicacion: ubicacionId, stock_actual: 100 });
-
-
-
-        // 3. Crear la Venta
-
-        console.log('2. Creando una venta de prueba...');
-
-        const ventaPayload = {
-
-            id_cliente: clienteId,
-
-            id_punto_venta: 1, // Asumir punto de venta 1
-
-            id_tipo_pago: 1, // Asumir tipo de pago 1
-
-            total_bruto_venta: 15000,
-
-            detalles: [
-
-                { id_formato_producto: formatoId, cantidad: 10, precio_unitario: 1500, id_lote: loteId, id_ubicacion: ubicacionId }
-
-            ]
-
-        };
-
-        const ventaRes = await request('POST', '/ventas', ventaPayload);
-
-        if (ventaRes.statusCode !== 201) throw new Error(`POST /ventas falló: ${JSON.stringify(ventaRes.body)}`);
-
-        ventaId = ventaRes.body.id_venta;
-
-        console.log(`  -> ÉXITO. Venta creada con ID: ${ventaId}`);
-
-
-
-        // 4. Probar GET /ventas
-
-        console.log('3. Probando GET /ventas...');
-
-        const getListRes = await request('GET', '/ventas');
-
-        if (getListRes.statusCode !== 200 || !getListRes.body.some(v => v.id_venta === ventaId)) {
-
-            throw new Error('GET /ventas falló o no contiene la venta creada.');
-
-        }
-
-        console.log('  -> ÉXITO. La lista de ventas contiene la nueva venta.');
-
-
-
-        // 5. Probar GET /ventas/:id
-
-        console.log(`4. Probando GET /ventas/${ventaId}...`);
-
-        const getSingleRes = await request('GET', `/ventas/${ventaId}`);
-
-        if (getSingleRes.statusCode !== 200 || getSingleRes.body.detalles.length !== 1) {
-
-            throw new Error(`GET /ventas/${ventaId} falló.`);
-
-        }
-
-        console.log('  -> ÉXITO. Detalle de venta obtenido correctamente.');
-
-
-
-        console.log('--- PRUEBA DE LECTURA PARA Ventas COMPLETADA CON ÉXITO ---');
-
-        return true;
-
-
-
-    } catch (error) {
-
-        console.error(`--- PRUEBA DE LECTURA PARA Ventas FALLÓ ---`);
-
-        console.error(error.message);
-
-        return false;
-
-    } finally {
-
-        // Limpieza de datos creados
-
-        if (ventaId) await request('DELETE', `/ventas/${ventaId}`);
-
-        if (clienteId) await request('DELETE', `/clients/${clienteId}`);
-
-    }
-
-}
-
-
-
 async function testComunasCrud() {
-
     console.log(`\n--- INICIANDO PRUEBA COMPLEJA PARA: Comunas ---`);
-
-    let regionId, comunaId;
-
-
-
+    let regionId;
     try {
-
-        // 1. Crear dependencia: Region
-
         console.log('1. Creando dependencia (Region)...');
-
         const regionRes = await request('POST', '/regiones', { nombre_region: 'Region para Comunas' });
-
         regionId = regionRes.body.id_region;
-
         if (!regionId) throw new Error('No se pudo crear la Region de dependencia.');
-
         console.log(`  -> ÉXITO. Region creada con ID: ${regionId}`);
 
-
-
-        // 2. Probar CRUD de Comuna
-
         await testCrud(
-
             'Comuna (con dependencia)',
-
             '/comunas',
-
             { nombre_comuna: 'Comuna de Prueba', id_region: regionId },
-
             { nombre_comuna: 'Comuna de Prueba Actualizada', id_region: regionId },
-
             'id_comuna'
-
         );
 
-
-
         console.log('--- PRUEBA PARA Comunas COMPLETADA CON ÉXITO ---');
+        return true;
+    } catch (error) {
+        console.error(`--- PRUEBA PARA Comunas FALLÓ ---`);
+        console.error(error.message);
+        return false;
+    } finally {
+        if (regionId) await request('DELETE', `/regiones/${regionId}`);
+    }
+}
 
+async function testPedidoToVentaWorkflow() {
+    console.log(`\n--- INICIANDO PRUEBA DE FLUJO: Pedido a Venta ---`);
+    let clienteId, productoId, formatoId, loteId, pedidoId, ventaId, trabajadorId;
+    const ubicacionId = 1;
+    const cantidadPedido = 5;
+    const precioUnitario = 1000;
+    let initialStock;
+
+    try {
+        console.log('1. Creando dependencias (Cliente, Producto, Formato, Lote, Stock Inicial, Trabajador)...');
+        const clienteRes = await request('POST', '/clients', { nombre: 'Cliente Pedido-Venta', telefono: '999888777' });
+        clienteId = clienteRes.body.id_cliente;
+        const productoRes = await request('POST', '/products', { nombre: 'Producto Pedido-Venta', categoria: 'Flujo' });
+        productoId = productoRes.body.id_producto;
+        const formatoRes = await request('POST', '/formatos-producto', { id_producto: productoId, formato: 'Formato Flujo', precio_detalle_neto: precioUnitario });
+        formatoId = formatoRes.body.id_formato_producto;
+        const loteRes = await request('POST', '/lotes', { codigo_lote: `LOTE-FLUJO-${Date.now()}`, id_producto: productoId, fecha_produccion: '2025-01-01', cantidad_inicial: 100, costo_por_unidad: 500 });
+        loteId = loteRes.body.id_lote;
+        const trabajadorRes = await request('POST', '/trabajadores', { nombre: 'Trabajador Flujo' });
+        trabajadorId = trabajadorRes.body.id_trabajador;
+
+        await request('POST', '/inventario', { id_formato_producto: formatoId, id_ubicacion: ubicacionId, stock_actual: 50 });
+        const initialStockRes = await request('GET', `/inventario/stock/${formatoId}/${ubicacionId}`);
+        initialStock = initialStockRes.body.stock_actual;
+        console.log(`  -> ÉXITO. Stock inicial: ${initialStock}`);
+
+        console.log('2. Creando un Pedido...');
+        const pedidoPayload = {
+            id_cliente: clienteId,
+            id_trabajador: trabajadorId,
+            total: cantidadPedido * precioUnitario,
+            fecha_entrega: '2025-12-31',
+            detalles: [{ id_formato_producto: formatoId, cantidad: cantidadPedido, precio_unitario: precioUnitario, id_lote: loteId, id_ubicacion: ubicacionId }]
+        };
+        const pedidoRes = await request('POST', '/pedidos', pedidoPayload);
+        if (pedidoRes.statusCode !== 201) throw new Error(`POST /pedidos falló: ${JSON.stringify(pedidoRes.body)}`);
+        pedidoId = pedidoRes.body.id_pedido;
+        console.log(`  -> ÉXITO. Pedido creado con ID: ${pedidoId}`);
+
+        const stockAfterPedidoRes = await request('GET', `/inventario/stock/${formatoId}/${ubicacionId}`);
+        const stockAfterPedido = parseFloat(stockAfterPedidoRes.body.stock_actual);
+        if (stockAfterPedido !== (parseFloat(initialStock) - cantidadPedido)) throw new Error(`Stock incorrecto después del pedido. Esperado: ${parseFloat(initialStock) - cantidadPedido}, Obtenido: ${stockAfterPedido}`);
+        console.log(`  -> ÉXITO. Stock después del pedido: ${stockAfterPedido}`);
+
+        console.log(`4. Convirtiendo Pedido ${pedidoId} a Venta...`);
+        const ventaConvertPayload = { id_punto_venta: 1, id_tipo_pago: 1, neto_venta: cantidadPedido * precioUnitario, iva_venta: 0, total_bruto_venta: cantidadPedido * precioUnitario, estado_pago: 'Pagado', observacion: 'Venta convertida de pedido', con_factura: false };
+        const ventaConvertRes = await request('POST', `/pedidos/${pedidoId}/convertir-a-venta`, ventaConvertPayload);
+        if (ventaConvertRes.statusCode !== 201) throw new Error(`POST /pedidos/:id/convertir-a-venta falló: ${JSON.stringify(ventaConvertRes.body)}`);
+        ventaId = ventaConvertRes.body.id_venta;
+        console.log(`  -> ÉXITO. Pedido ${pedidoId} convertido a Venta ${ventaId}`);
+
+        const stockAfterVentaRes = await request('GET', `/inventario/stock/${formatoId}/${ubicacionId}`);
+        const stockAfterVenta = parseFloat(stockAfterVentaRes.body.stock_actual);
+        if (stockAfterVenta !== stockAfterPedido) throw new Error(`Stock incorrecto después de la venta. Esperado: ${stockAfterPedido}, Obtenido: ${stockAfterVenta}`);
+        console.log(`  -> ÉXITO. Stock después de la venta: ${stockAfterVenta}`);
+
+        const getVentaRes = await request('GET', `/ventas/${ventaId}`);
+        if (getVentaRes.statusCode !== 200 || getVentaRes.body.id_venta !== ventaId) throw new Error(`GET /ventas/${ventaId} falló.`);
+        console.log(`  -> ÉXITO. Venta ${ventaId} verificada.`);
+
+        console.log('--- PRUEBA DE FLUJO Pedido a Venta COMPLETADA CON ÉXITO ---');
         return true;
 
     } catch (error) {
-
-        console.error(`--- PRUEBA PARA Comunas FALLÓ ---`);
-
+        console.error(`--- PRUEBA DE FLUJO Pedido a Venta FALLÓ ---`);
         console.error(error.message);
-
         return false;
-
     } finally {
-
-        // Limpieza de dependencias
-
-        if (regionId) await request('DELETE', `/regiones/${regionId}`);
-
+        if (ventaId) await request('DELETE', `/ventas/${ventaId}`);
+        // if (pedidoId && !ventaId) await request('DELETE', `/pedidos/${pedidoId}`); // No hay endpoint para borrar pedidos
+        if (clienteId) await request('DELETE', `/clients/${clienteId}`);
+        if (formatoId) await request('DELETE', `/formatos-producto/${formatoId}`);
+        if (productoId) await request('DELETE', `/products/${productoId}`);
+        if (loteId) await request('DELETE', `/lotes/${loteId}`);
+        if (trabajadorId) await request('DELETE', `/trabajadores/${trabajadorId}`);
     }
-
 }
 
 async function runAllTests() {
     const results = [];
-    
-    results.push(await testCrud(
-        'Proveedores',
-        '/proveedores',
-        { nombre: 'Proveedor de Prueba', rut: '1234567-8', telefono: '987654321' },
-        { nombre: 'Proveedor de Prueba Actualizado', rut: '1234567-8', telefono: '987654321' },
-        'id_proveedor'
-    ));
+    const testSuffix = new Date().getTime();
 
-    results.push(await testCrud(
-        'Tipos de Cliente',
-        '/tipos-cliente',
-        { nombre_tipo: 'Tipo de Prueba' },
-        { nombre_tipo: 'Tipo de Prueba Actualizado' },
-        'id_tipo_cliente'
-    ));
-
-    results.push(await testCrud(
-        'Productos',
-        '/products',
-        { nombre: 'Producto de Prueba', categoria: 'Pruebas' },
-        { nombre: 'Producto de Prueba Actualizado', categoria: 'Pruebas', activo: false },
-        'id_producto'
-    ));
-    
-    results.push(await testCrud(
-        'Ubicaciones',
-        '/ubicaciones',
-        { nombre: 'Ubicación de Prueba', tipo: 'Bodega', direccion: 'Fondo a la derecha', id_ciudad: 1 },
-        { nombre: 'Ubicación de Prueba Actualizada', tipo: 'Tienda', direccion: 'Fondo a la derecha', id_ciudad: 1 },
-        'id_ubicacion'
-    ));
-
-    results.push(await testCrud(
-        'Ciudades',
-        '/ciudades',
-        { nombre_ciudad: 'Ciudad de Prueba' },
-        { nombre_ciudad: 'Ciudad de Prueba Actualizada' },
-        'id_ciudad'
-    ));
-
-    results.push(await testCrud(
-        'Tipos de Pago',
-        '/tipos-pago',
-        { nombre_tipo_pago: 'Tipo de Pago de Prueba' },
-        { nombre_tipo_pago: 'Tipo de Pago de Prueba Actualizado' },
-        'id_tipo_pago'
-    ));
-
-    results.push(await testCrud(
-        'Fuentes de Contacto',
-        '/fuentes-contacto',
-        { nombre_fuente: 'Fuente de Prueba' },
-        { nombre_fuente: 'Fuente de Prueba Actualizada' },
-        'id_fuente_contacto'
-    ));
-
-    results.push(await testCrud(
-        'Puntos de Venta',
-        '/puntos-venta',
-        { nombre: 'Punto de Venta de Prueba', tipo: 'Tienda', direccion: 'Calle Falsa 123', id_ciudad: 1 },
-        { nombre: 'Punto de Venta de Prueba Actualizado', tipo: 'Kiosko', direccion: 'Calle Verdadera 456', id_ciudad: 1 },
-        'id_punto_venta'
-    ));
-
-    results.push(await testCrud(
-        'Trabajadores',
-        '/trabajadores',
-        { nombre: 'Trabajador de Prueba' },
-        { nombre: 'Trabajador de Prueba Actualizado' },
-        'id_trabajador'
-    ));
-
-    results.push(await testCrud(
-        'Regiones',
-        '/regiones',
-        { nombre_region: 'Region de Prueba' },
-        { nombre_region: 'Region de Prueba Actualizada' },
-        'id_region'
-    ));
-
+    results.push(await testCrud('Proveedores', '/proveedores', { nombre: `Proveedor de Prueba ${testSuffix}`, rut: '1234567-8', telefono: '987654321' }, { nombre: `Proveedor de Prueba Actualizado ${testSuffix}`, rut: '1234567-8', telefono: '987654321' }, 'id_proveedor'));
+    results.push(await testCrud('Tipos de Cliente', '/tipos-cliente', { nombre_tipo: `Tipo de Prueba ${testSuffix}` }, { nombre_tipo: `Tipo de Prueba Actualizado ${testSuffix}` }, 'id_tipo_cliente'));
+    results.push(await testCrud('Productos', '/products', { nombre: `Producto de Prueba ${testSuffix}`, categoria: 'Pruebas' }, { nombre: `Producto de Prueba Actualizado ${testSuffix}`, categoria: 'Pruebas', activo: false }, 'id_producto'));
+    results.push(await testCrud('Ubicaciones', '/ubicaciones', { nombre: `Ubicación de Prueba ${testSuffix}`, tipo: 'Bodega', direccion: 'Fondo a la derecha', id_ciudad: 1 }, { nombre: `Ubicación de Prueba Actualizada ${testSuffix}`, tipo: 'Tienda', direccion: 'Fondo a la derecha', id_ciudad: 1 }, 'id_ubicacion'));
+    results.push(await testCrud('Ciudades', '/ciudades', { nombre_ciudad: `Ciudad de Prueba ${testSuffix}` }, { nombre_ciudad: `Ciudad de Prueba Actualizada ${testSuffix}` }, 'id_ciudad'));
+    results.push(await testCrud('Tipos de Pago', '/tipos-pago', { nombre_tipo_pago: `Tipo de Pago de Prueba ${testSuffix}` }, { nombre_tipo_pago: `Tipo de Pago de Prueba Actualizado ${testSuffix}` }, 'id_tipo_pago'));
+    results.push(await testCrud('Fuentes de Contacto', '/fuentes-contacto', { nombre_fuente: `Fuente de Prueba ${testSuffix}` }, { nombre_fuente: `Fuente de Prueba Actualizada ${testSuffix}` }, 'id_fuente_contacto'));
+    results.push(await testCrud('Puntos de Venta', '/puntos-venta', { nombre: `Punto de Venta de Prueba ${testSuffix}`, tipo: 'Tienda', direccion: 'Calle Falsa 123', id_ciudad: 1 }, { nombre: `Punto de Venta de Prueba Actualizado ${testSuffix}`, tipo: 'Kiosko', direccion: 'Calle Verdadera 456', id_ciudad: 1 }, 'id_punto_venta'));
+    results.push(await testCrud('Trabajadores', '/trabajadores', { nombre: `Trabajador de Prueba ${testSuffix}` }, { nombre: `Trabajador de Prueba Actualizado ${testSuffix}` }, 'id_trabajador'));
+    results.push(await testCrud('Regiones', '/regiones', { nombre_region: `Region de Prueba ${testSuffix}` }, { nombre_region: `Region de Prueba Actualizada ${testSuffix}` }, 'id_region'));
     results.push(await testComunasCrud());
-
-    results.push(await testCrud(
-        'Categorias de Cliente',
-        '/categorias-cliente',
-        { nombre_categoria: 'Categoria de Prueba' },
-        { nombre_categoria: 'Categoria de Prueba Actualizada' },
-        'id_categoria_cliente'
+    results.push(await testCrud('Categorias de Cliente', '/categorias-cliente', { nombre_categoria: `Categoria de Prueba ${testSuffix}` }, { nombre_categoria: `Categoria de Prueba Actualizada ${testSuffix}` }, 'id_categoria_cliente'));
+    results.push(await testCrud('Clasificaciones de Cliente', '/clasificaciones-cliente', { nombre_clasificacion: `Clasificacion de Prueba ${testSuffix}` }, { nombre_clasificacion: `Clasificacion de Prueba Actualizada ${testSuffix}` }, 'id_clasificacion_cliente'));
+    results.push(await testCrud('Frecuencias de Compra', '/frecuencias-compra', { nombre_frecuencia: `Frecuencia de Prueba ${testSuffix}` }, { nombre_frecuencia: `Frecuencia de Prueba Actualizada ${testSuffix}` }, 'id_frecuencia_compra'
     ));
-
-    results.push(await testVentasGet());
+    results.push(await testCrud('Tipos de Consumo', '/tipos-consumo', { nombre_tipo: `TC Prueba ${testSuffix}` }, { nombre_tipo: `TC Prueba Actualizado ${testSuffix}` }, 'id_tipo_consumo'
+    ));
+    results.push(await testCrud('Cuentas Bancarias', '/cuentas-bancarias', 
+        { nombre_banco: `Banco Prueba ${testSuffix}`, tipo_cuenta: 'Corriente', numero_cuenta: `123456789${testSuffix}`, rut_titular: '11111111-1', nombre_titular: `Titular Prueba ${testSuffix}`, email_titular: `test${testSuffix}@example.com` }, 
+        { nombre_banco: `Banco Actualizado ${testSuffix}`, tipo_cuenta: 'Ahorro', numero_cuenta: `987654321${testSuffix}`, rut_titular: '22222222-2', nombre_titular: `Titular Actualizado ${testSuffix}`, email_titular: `updated${testSuffix}@example.com` }, 
+        'id_cuenta'
+    ));
+    results.push(await testPedidoToVentaWorkflow());
 
     console.log('\n--- Resumen de Pruebas ---');
     const all_passed = results.every(r => r);
