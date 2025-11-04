@@ -9,9 +9,9 @@ Para ponerte al día con el proyecto, sigue estos pasos:
     *   Utiliza el comando `ls -R` para obtener una vista completa de la estructura de directorios y archivos del proyecto.
         Esto te ayudará a familiarizarte con la organización del código.
 
-3.  **Entiende la Base de Datos:**
+3.  **Entiende la Base de Datos (¡No la crees de nuevo!):**
     *   La base de datos es fundamental. Revisa el archivo `proyecto-db/ddl/postgres_schema_consolidado.sql` para entender
-        el esquema completo de la base de datos, las tablas y sus relaciones.
+        el esquema completo de la base de datos, las tablas y sus relaciones. **Es crucial entender que la base de datos ya existe y no debe ser creada de nuevo.** La aplicación se conectará a la base de datos existente.
 
 4.  **Inicia el Entorno de Desarrollo:**
     *   Navega al directorio `app-gestion/backend/`.
