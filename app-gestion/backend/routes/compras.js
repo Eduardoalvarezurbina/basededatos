@@ -1,7 +1,8 @@
 const express = require('express');
 const { Pool } = require('pg');
-const { verifyToken, authorizeRole } = require('./authMiddleware');
+
 const router = express.Router();
+const { authorizeRole } = require('./authMiddleware');
 
 // DB Connection
 const pool = new Pool({
@@ -12,7 +13,28 @@ const pool = new Pool({
   port: parseInt(process.env.DB_PORT || "5432"),
 });
 
-router.use(verifyToken);
+
+
+async function updateInventory(client, detalles, factor) {
+    for (const item of detalles) {
+        const stockChange = item.cantidad * factor;
+        const updateInventarioResult = await client.query(
+            'UPDATE Inventario SET stock_actual = stock_actual + $1, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_formato_producto = $2 AND id_ubicacion = $3',
+            [stockChange, item.id_formato_producto, item.id_ubicacion]
+        );
+
+        if (updateInventarioResult.rowCount === 0) {
+            if (factor > 0) {
+                await client.query(
+                    'INSERT INTO Inventario (id_formato_producto, id_ubicacion, stock_actual, fecha_actualizacion) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+                    [item.id_formato_producto, item.id_ubicacion, stockChange]
+                );
+            } else {
+                throw new Error(`No hay suficiente stock para el formato de producto ${item.id_formato_producto} en la ubicación ${item.id_ubicacion}.`);
+            }
+        }
+    }
+}
 
 // GET /compras - Obtener todas las compras con sus detalles
 router.get('/', async (req, res) => {
@@ -62,7 +84,6 @@ router.get('/:id', async (req, res) => {
 // POST /compras - Crear una nueva compra y actualizar inventario
 router.post('/', authorizeRole(['admin']), async (req, res) => {
   const { id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva, detalles } = req.body;
-  // 'detalles' es un array de { id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }
 
   if (!detalles || detalles.length === 0) {
     return res.status(400).json({ message: 'Purchase details cannot be empty' });
@@ -72,6 +93,37 @@ router.post('/', authorizeRole(['admin']), async (req, res) => {
   try {
     await client.query('BEGIN');
 
+    // Validaciones
+    const validationPromises = [];
+
+    if (id_proveedor) {
+      validationPromises.push(client.query('SELECT 1 FROM Proveedores WHERE id_proveedor = $1', [id_proveedor]));
+    }
+    if (id_tipo_pago) {
+        validationPromises.push(client.query('SELECT 1 FROM Tipos_Pago WHERE id_tipo_pago = $1', [id_tipo_pago]));
+    }
+    if (id_cuenta_origen) {
+        validationPromises.push(client.query('SELECT 1 FROM Cuentas_Bancarias WHERE id_cuenta = $1', [id_cuenta_origen]));
+    }
+
+    detalles.forEach(item => {
+        if (item.cantidad <= 0) {
+            throw new Error(`La cantidad para el formato de producto ${item.id_formato_producto} debe ser un número positivo.`);
+        }
+        if (item.precio_unitario < 0) {
+            throw new Error(`El precio unitario para el formato de producto ${item.id_formato_producto} no puede ser negativo.`);
+        }
+        validationPromises.push(client.query('SELECT 1 FROM Formatos_Producto WHERE id_formato_producto = $1', [item.id_formato_producto]));
+        validationPromises.push(client.query('SELECT 1 FROM Ubicaciones_Inventario WHERE id_ubicacion = $1', [item.id_ubicacion]));
+    });
+
+    const validationResults = await Promise.all(validationPromises);
+    for (const result of validationResults) {
+        if (result.rowCount === 0) {
+            throw new Error('Invalid data provided. One or more entities do not exist.');
+        }
+    }
+
     // 1. Insertar en la tabla principal de Compras
     const compraResult = await client.query(
       'INSERT INTO Compras (id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva, fecha) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE) RETURNING id_compra',
@@ -79,27 +131,16 @@ router.post('/', authorizeRole(['admin']), async (req, res) => {
     );
     const newCompraId = compraResult.rows[0].id_compra;
 
-    // 2. Iterar sobre los detalles para insertarlos y actualizar el inventario
+    // 2. Iterar sobre los detalles para insertarlos
     for (const item of detalles) {
-      // 2a. Insertar en Detalle_Compras
       await client.query(
         'INSERT INTO Detalle_Compras (id_compra, id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion) VALUES ($1, $2, $3, $4, $5, $6)',
         [newCompraId, item.id_formato_producto, item.cantidad, item.precio_unitario, item.id_lote, item.id_ubicacion]
       );
-
-      // 2b. Actualizar (o insertar) el inventario en la ubicación especificada
-      const updateInventarioResult = await client.query(
-        'UPDATE Inventario SET stock_actual = stock_actual + $1, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_formato_producto = $2 AND id_ubicacion = $3',
-        [item.cantidad, item.id_formato_producto, item.id_ubicacion]
-      );
-
-      if (updateInventarioResult.rowCount === 0) {
-        await client.query(
-          'INSERT INTO Inventario (id_formato_producto, id_ubicacion, stock_actual, fecha_actualizacion) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
-          [item.id_formato_producto, item.id_ubicacion, item.cantidad]
-        );
-      }
     }
+
+    // 3. Actualizar inventario
+    await updateInventory(client, detalles, 1);
 
     await client.query('COMMIT');
     res.status(201).json({ message: 'Purchase created successfully', id_compra: newCompraId });
@@ -125,25 +166,14 @@ router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
     const detalles = detallesResult.rows;
 
     if (detalles.length === 0) {
-      // Esto puede significar que la compra no existe o no tiene detalles.
-      // Verificamos si la compra existe para dar un error 404 adecuado.
       const compraExistResult = await client.query('SELECT 1 FROM Compras WHERE id_compra = $1', [id]);
       if (compraExistResult.rowCount === 0) {
         throw new Error('Purchase not found');
       }
     }
 
-    // 2. Revertir el inventario por cada detalle
-    for (const item of detalles) {
-      const updateInventarioResult = await client.query(
-        'UPDATE Inventario SET stock_actual = stock_actual - $1 WHERE id_formato_producto = $2 AND id_ubicacion = $3 AND stock_actual >= $1',
-        [item.cantidad, item.id_formato_producto, item.id_ubicacion]
-      );
-
-      if (updateInventarioResult.rowCount === 0) {
-        throw new Error(`Not enough stock to roll back for product format ${item.id_formato_producto} in location ${item.id_ubicacion}. Data might be inconsistent.`);
-      }
-    }
+    // 2. Revertir el inventario
+    await updateInventory(client, detalles, -1);
 
     // 3. Eliminar los detalles de la compra
     await client.query('DELETE FROM Detalle_Compras WHERE id_compra = $1', [id]);
@@ -152,7 +182,6 @@ router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
     const deleteCompraResult = await client.query('DELETE FROM Compras WHERE id_compra = $1 RETURNING *', [id]);
 
     if (deleteCompraResult.rowCount === 0) {
-        // Esto no debería pasar si la verificación inicial se hizo, pero es una salvaguarda.
         throw new Error('Purchase not found');
     }
 

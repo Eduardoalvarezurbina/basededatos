@@ -1,7 +1,8 @@
 const express = require('express');
 const { Pool } = require('pg');
-const { verifyToken, authorizeRole } = require('./authMiddleware');
 const router = express.Router();
+
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 
 // DB Connection - This should ideally be passed or imported from a central config
 const pool = new Pool({
@@ -12,7 +13,18 @@ const pool = new Pool({
   port: parseInt(process.env.DB_PORT || "5432"),
 });
 
-router.use(verifyToken);
+
+
+// GET /products/active - Obtener todos los productos activos
+router.get('/active', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM Productos WHERE activo = TRUE ORDER BY nombre');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error getting active products:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 // GET /products - Obtener todos los productos
 router.get('/', async (req, res) => {
@@ -85,17 +97,6 @@ router.put('/:id', authorizeRole(['admin']), async (req, res) => {
     res.json({ message: 'Product updated successfully', product: result.rows[0] });
   } catch (err) {
     console.error('Error updating product:', err);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-});
-
-// GET /products/active - Obtener todos los productos activos
-router.get('/active', async (req, res) => {
-  try {
-    const result = await pool.query('SELECT * FROM Productos WHERE activo = TRUE ORDER BY nombre');
-    res.json(result.rows);
-  } catch (err) {
-    console.error('Error getting active products:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });

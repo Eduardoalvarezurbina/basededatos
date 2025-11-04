@@ -1,8 +1,31 @@
-# Avance del Proyecto: App Gestión
+## Avance del Proyecto
 
-Este documento resume el estado de desarrollo del proyecto, dividido en sus componentes principales.
+### martes, 4 de noviembre de 2025
 
----
+- **Descripción:**
+  - Se refactorizó la configuración de pruebas para el backend.
+  - Se creó `app-gestion/backend/test-setup.js` para manejar el reinicio y la siembra de la base de datos de prueba.
+  - Se configuró `jest.config.js` para usar `test-setup.js` como `globalSetup`.
+  - Se limpió `app-gestion/backend/compras.test.js` eliminando la lógica de configuración de la base de datos de los bloques `beforeEach` y `afterAll`.
+  - Se verificó que las pruebas de `compras` pasaran con la nueva configuración.
+  - Se eliminaron los `console.log` de depuración.
+
+### Estado Actual del Proyecto:
+
+1.  **Revisar y Refactorizar Módulos Principales (Compras y Ventas):**
+    *   **Compras:**
+        *   [DONE] Configuración de pruebas y refactorización completada.
+        *   [TODO] Expandir la suite de pruebas para cubrir más escenarios, incluyendo casos límite y manejo de errores de validación.
+    *   **Ventas:**
+        *   [TODO] Iniciar refactorización y creación de pruebas.
+2.  **Asegurar Rutas Restantes (products, lotes, produccion, reclamos, compras, ventas):**
+    *   [TODO] Pendiente.
+3.  **Pruebas Exhaustivas:**
+    *   [TODO] Pendiente.
+4.  **Actualizar Documentación:**
+    *   [DONE] Actualización de `avance_del_proyecto.md`.
+
+
 
 ### 1. Base de Datos (PostgreSQL)
 

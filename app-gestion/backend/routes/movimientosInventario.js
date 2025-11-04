@@ -3,6 +3,7 @@ const { Pool } = require('pg');
 const { verifyToken, authorizeRole } = require('./authMiddleware');
 const router = express.Router();
 
+
 // DB Connection
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -12,7 +13,7 @@ const pool = new Pool({
   port: parseInt(process.env.DB_PORT || "5432"),
 });
 
-router.use(verifyToken);
+
 
 // POST /movimientos-inventario - Crear un nuevo movimiento de inventario (transferencia)
 router.post('/', authorizeRole(['admin']), async (req, res) => {
@@ -146,6 +147,69 @@ router.get('/:id', async (req, res) => {
   } catch (err) {
     console.error('Error getting inventory movement by id:', err);
     res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
+  const { id } = req.params;
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    // 1. Obtener los detalles del movimiento para saber qué revertir
+    const detallesResult = await client.query('SELECT * FROM Detalle_Movimientos_Inventario WHERE id_movimiento = $1', [id]);
+    const detalles = detallesResult.rows;
+
+    const movimientoResult = await client.query('SELECT * FROM Movimientos_Inventario WHERE id_movimiento = $1', [id]);
+    if (movimientoResult.rowCount === 0) {
+      throw new Error('Inventory movement not found');
+    }
+    const { id_ubicacion_origen, id_ubicacion_destino } = movimientoResult.rows[0];
+
+    // 2. Revertir el inventario por cada detalle
+    for (const item of detalles) {
+      // Sumar stock al origen
+      const origenUpdateResult = await client.query(
+        'UPDATE Inventario SET stock_actual = stock_actual + $1, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_formato_producto = $2 AND id_ubicacion = $3',
+        [item.cantidad, item.id_formato_producto, id_ubicacion_origen]
+      );
+      if (origenUpdateResult.rowCount === 0) {
+        // Si no existe el registro en la ubicación de origen, lo creamos
+        await client.query(
+          'INSERT INTO Inventario (id_formato_producto, id_ubicacion, stock_actual, fecha_actualizacion) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+          [item.id_formato_producto, id_ubicacion_origen, item.cantidad]
+        );
+      }
+
+      // Restar stock del destino
+      const destinoUpdateResult = await client.query(
+        'UPDATE Inventario SET stock_actual = stock_actual - $1, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_formato_producto = $2 AND id_ubicacion = $3 AND stock_actual >= $1',
+        [item.cantidad, item.id_formato_producto, id_ubicacion_destino]
+      );
+
+      if (destinoUpdateResult.rowCount === 0) {
+        throw new Error(`Not enough stock to roll back for product format ${item.id_formato_producto} in destination location ${id_ubicacion_destino}. Data might be inconsistent.`);
+      }
+    }
+
+    // 3. Eliminar los detalles del movimiento
+    await client.query('DELETE FROM Detalle_Movimientos_Inventario WHERE id_movimiento = $1', [id]);
+
+    // 4. Eliminar el movimiento principal
+    await client.query('DELETE FROM Movimientos_Inventario WHERE id_movimiento = $1', [id]);
+
+    await client.query('COMMIT');
+    res.json({ message: 'Inventory movement deleted and stock rolled back successfully' });
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error deleting inventory movement:', err);
+    if (err.message.includes('not found')) {
+        return res.status(404).json({ message: err.message });
+    }
+    res.status(500).json({ message: 'Internal server error', error: err.message });
+  } finally {
+    client.release();
   }
 });
 
