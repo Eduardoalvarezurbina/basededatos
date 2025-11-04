@@ -15,7 +15,7 @@
 1.  **Revisar y Refactorizar Módulos Principales (Compras y Ventas):**
     *   **Compras:**
         *   [DONE] Configuración de pruebas y refactorización completada.
-        *   [TODO] Expandir la suite de pruebas para cubrir más escenarios, incluyendo casos límite y manejo de errores de validación.
+        *   [DONE] Suite de pruebas expandida para cubrir escenarios de creación, lectura, actualización y eliminación (CRUD), incluyendo casos límite y manejo de errores de validación.
     *   **Ventas:**
         *   [TODO] Iniciar refactorización y creación de pruebas.
 2.  **Asegurar Rutas Restantes (products, lotes, produccion, reclamos, compras, ventas):**

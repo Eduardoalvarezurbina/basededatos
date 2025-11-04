@@ -85,27 +85,57 @@ router.get('/:id', async (req, res) => {
 router.post('/', authorizeRole(['admin']), async (req, res) => {
   const { id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva, detalles } = req.body;
 
-  if (!detalles || detalles.length === 0) {
-    return res.status(400).json({ message: 'Purchase details cannot be empty' });
+  // Basic validation for required fields
+  if (id_proveedor === undefined) {
+    return res.status(400).json({ message: 'id_proveedor es requerido.' });
   }
+  if (id_tipo_pago === undefined) {
+    return res.status(400).json({ message: 'id_tipo_pago es requerido.' });
+  }
+  if (id_cuenta_origen === undefined) {
+    return res.status(400).json({ message: 'id_cuenta_origen es requerido.' });
+  }
+  if (neto === undefined) {
+    return res.status(400).json({ message: 'neto es requerido.' });
+  }
+  if (iva === undefined) {
+    return res.status(400).json({ message: 'iva es requerido.' });
+  }
+  if (total === undefined) {
+    return res.status(400).json({ message: 'total es requerido.' });
+  }
+  if (con_factura === undefined) {
+    return res.status(400).json({ message: 'con_factura es requerido.' });
+  }
+  if (con_iva === undefined) {
+    return res.status(400).json({ message: 'con_iva es requerido.' });
+  }
+  if (!Array.isArray(detalles)) {
+    return res.status(400).json({ message: 'detalles de compra deben ser un array.' });
+  }
+  if (detalles.length === 0) {
+    return res.status(400).json({ message: 'detalles de compra no pueden estar vacíos.' });
+  }
+
+  // Type validation
+  if (typeof neto !== 'number' || typeof iva !== 'number' || typeof total !== 'number') {
+    return res.status(400).json({ message: 'neto, iva y total deben ser números.' });
+  }
+  if (typeof con_factura !== 'boolean' || typeof con_iva !== 'boolean') {
+    return res.status(400).json({ message: 'con_factura y con_iva deben ser booleanos.' });
+  }
+
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // Validaciones
+    // Validaciones de existencia
     const validationPromises = [];
 
-    if (id_proveedor) {
-      validationPromises.push(client.query('SELECT 1 FROM Proveedores WHERE id_proveedor = $1', [id_proveedor]));
-    }
-    if (id_tipo_pago) {
-        validationPromises.push(client.query('SELECT 1 FROM Tipos_Pago WHERE id_tipo_pago = $1', [id_tipo_pago]));
-    }
-    if (id_cuenta_origen) {
-        validationPromises.push(client.query('SELECT 1 FROM Cuentas_Bancarias WHERE id_cuenta = $1', [id_cuenta_origen]));
-    }
-
+    validationPromises.push(client.query('SELECT 1 FROM Proveedores WHERE id_proveedor = $1', [id_proveedor]));
+    validationPromises.push(client.query('SELECT 1 FROM Tipos_Pago WHERE id_tipo_pago = $1', [id_tipo_pago]));
+    validationPromises.push(client.query('SELECT 1 FROM Cuentas_Bancarias WHERE id_cuenta = $1', [id_cuenta_origen]));
     detalles.forEach(item => {
         if (item.cantidad <= 0) {
             throw new Error(`La cantidad para el formato de producto ${item.id_formato_producto} debe ser un número positivo.`);
@@ -118,10 +148,23 @@ router.post('/', authorizeRole(['admin']), async (req, res) => {
     });
 
     const validationResults = await Promise.all(validationPromises);
-    for (const result of validationResults) {
-        if (result.rowCount === 0) {
-            throw new Error('Invalid data provided. One or more entities do not exist.');
-        }
+    if (validationResults[0].rowCount === 0) {
+      return res.status(400).json({ message: 'id_proveedor inválido.' });
+    }
+    if (validationResults[1].rowCount === 0) {
+      return res.status(400).json({ message: 'id_tipo_pago inválido.' });
+    }
+    if (validationResults[2].rowCount === 0) {
+      return res.status(400).json({ message: 'id_cuenta_origen inválido.' });
+    }
+
+    for (let i = 3; i < validationResults.length; i += 2) {
+      if (validationResults[i].rowCount === 0) {
+        return res.status(400).json({ message: 'id_formato_producto inválido en detalles.' });
+      }
+      if (validationResults[i + 1].rowCount === 0) {
+        return res.status(400).json({ message: 'id_ubicacion inválido en detalles.' });
+      }
     }
 
     // 1. Insertar en la tabla principal de Compras
@@ -168,7 +211,7 @@ router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
     if (detalles.length === 0) {
       const compraExistResult = await client.query('SELECT 1 FROM Compras WHERE id_compra = $1', [id]);
       if (compraExistResult.rowCount === 0) {
-        throw new Error('Purchase not found');
+        return res.status(404).json({ message: 'Purchase not found' });
       }
     }
 
@@ -207,6 +250,23 @@ router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
 router.put('/:id', authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const { id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva } = req.body;
+
+  // Basic validation for data types
+  if (neto !== undefined && typeof neto !== 'number') {
+    return res.status(400).json({ message: 'neto debe ser un número.' });
+  }
+  if (iva !== undefined && typeof iva !== 'number') {
+    return res.status(400).json({ message: 'iva debe ser un número.' });
+  }
+  if (total !== undefined && typeof total !== 'number') {
+    return res.status(400).json({ message: 'total debe ser un número.' });
+  }
+  if (con_factura !== undefined && typeof con_factura !== 'boolean') {
+    return res.status(400).json({ message: 'con_factura debe ser un booleano.' });
+  }
+  if (con_iva !== undefined && typeof con_iva !== 'boolean') {
+    return res.status(400).json({ message: 'con_iva debe ser un booleano.' });
+  }
 
   try {
     const result = await pool.query(
