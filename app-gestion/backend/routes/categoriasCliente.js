@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const router = express.Router();
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 
 // DB Connection
 const pool = new Pool({
@@ -12,7 +13,7 @@ const pool = new Pool({
 });
 
 // GET /categorias-cliente - Obtener todas las categorías de cliente
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM Categorias_Cliente ORDER BY nombre_categoria');
     res.json(result.rows);
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /categorias-cliente/:id - Obtener una categoría de cliente por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('SELECT * FROM Categorias_Cliente WHERE id_categoria_cliente = $1', [id]);
@@ -38,7 +39,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /categorias-cliente - Crear una nueva categoría de cliente
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { nombre_categoria } = req.body;
   try {
     const result = await pool.query('INSERT INTO Categorias_Cliente (nombre_categoria) VALUES ($1) RETURNING *', [nombre_categoria]);
@@ -50,7 +51,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /categorias-cliente/:id - Actualizar una categoría de cliente
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const { nombre_categoria } = req.body;
   try {
@@ -66,7 +67,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /categorias-cliente/:id - Eliminar una categoría de cliente
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM Categorias_Cliente WHERE id_categoria_cliente = $1 RETURNING *', [id]);

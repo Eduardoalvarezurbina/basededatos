@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const router = express.Router();
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 
 // DB Connection
 const pool = new Pool({
@@ -12,7 +13,7 @@ const pool = new Pool({
 });
 
 // GET /clasificaciones-cliente - Obtener todas las clasificaciones de cliente
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM Clasificaciones_Cliente ORDER BY nombre_clasificacion');
     res.json(result.rows);
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /clasificaciones-cliente/:id - Obtener una clasificación de cliente por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('SELECT * FROM Clasificaciones_Cliente WHERE id_clasificacion_cliente = $1', [id]);
@@ -38,7 +39,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /clasificaciones-cliente - Crear una nueva clasificación de cliente
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { nombre_clasificacion } = req.body;
   try {
     const result = await pool.query('INSERT INTO Clasificaciones_Cliente (nombre_clasificacion) VALUES ($1) RETURNING *', [nombre_clasificacion]);
@@ -50,7 +51,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /clasificaciones-cliente/:id - Actualizar una clasificación de cliente
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const { nombre_clasificacion } = req.body;
   try {
@@ -66,7 +67,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /clasificaciones-cliente/:id - Eliminar una clasificación de cliente
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM Clasificaciones_Cliente WHERE id_clasificacion_cliente = $1 RETURNING *', [id]);

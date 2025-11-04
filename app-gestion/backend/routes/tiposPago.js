@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const router = express.Router();
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 
 // DB Connection
 const pool = new Pool({
@@ -12,7 +13,7 @@ const pool = new Pool({
 });
 
 // GET /tipos-pago - Obtener todos los tipos de pago
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM Tipos_Pago ORDER BY nombre_tipo_pago');
     res.json(result.rows);
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /tipos-pago/:id - Obtener un tipo de pago por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('SELECT * FROM Tipos_Pago WHERE id_tipo_pago = $1', [id]);
@@ -38,7 +39,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /tipos-pago - Crear un nuevo tipo de pago
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { nombre_tipo_pago } = req.body;
   try {
     const result = await pool.query('INSERT INTO Tipos_Pago (nombre_tipo_pago) VALUES ($1) RETURNING *', [nombre_tipo_pago]);
@@ -50,7 +51,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /tipos-pago/:id - Actualizar un tipo de pago
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const { nombre_tipo_pago } = req.body;
   try {
@@ -66,7 +67,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /tipos-pago/:id - Eliminar un tipo de pago
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM Tipos_Pago WHERE id_tipo_pago = $1 RETURNING *', [id]);

@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const router = express.Router();
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 
 // DB Connection
 const pool = new Pool({
@@ -12,7 +13,7 @@ const pool = new Pool({
 });
 
 // GET /fuentes-contacto - Obtener todas las fuentes de contacto
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM Fuentes_Contacto ORDER BY nombre_fuente');
     res.json(result.rows);
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /fuentes-contacto/:id - Obtener una fuente de contacto por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('SELECT * FROM Fuentes_Contacto WHERE id_fuente_contacto = $1', [id]);
@@ -38,7 +39,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /fuentes-contacto - Crear una nueva fuente de contacto
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { nombre_fuente } = req.body;
   try {
     const result = await pool.query('INSERT INTO Fuentes_Contacto (nombre_fuente) VALUES ($1) RETURNING *', [nombre_fuente]);
@@ -50,7 +51,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /fuentes-contacto/:id - Actualizar una fuente de contacto
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const { nombre_fuente } = req.body;
   try {
@@ -66,7 +67,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /fuentes-contacto/:id - Eliminar una fuente de contacto
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM Fuentes_Contacto WHERE id_fuente_contacto = $1 RETURNING *', [id]);

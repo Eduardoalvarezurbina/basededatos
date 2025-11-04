@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const router = express.Router();
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 
 // DB Connection
 const pool = new Pool({
@@ -12,7 +13,7 @@ const pool = new Pool({
 });
 
 // GET /ubicaciones - Obtener todas
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM Ubicaciones_Inventario ORDER BY nombre');
     res.json(result.rows);
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /ubicaciones/:id - Obtener una por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('SELECT * FROM Ubicaciones_Inventario WHERE id_ubicacion = $1', [id]);
@@ -38,7 +39,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /ubicaciones - Crear una nueva
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { nombre, tipo, direccion, id_ciudad } = req.body;
   try {
     const result = await pool.query(
@@ -53,7 +54,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /ubicaciones/:id - Actualizar una
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const { nombre, tipo, direccion, id_ciudad } = req.body;
   try {
@@ -72,7 +73,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /ubicaciones/:id - Eliminar una
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM Ubicaciones_Inventario WHERE id_ubicacion = $1 RETURNING *', [id]);

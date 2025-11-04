@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14-alpine
+    container_name: postgres_db
+    environment:
+      POSTGRES_DB: business_data
+      POSTGRES_USER: app_user
+      POSTGRES_PASSWORD: 210794
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build: ../app-gestion/backend
+    container_name: backend_app
+    ports:
+      - "3001:3001"
+    environment:
+      DB_HOST: db
+      DB_USER: app_user
+      DB_PASSWORD: 210794
+      DB_DATABASE: business_data
+      DB_PORT: 5432
+    depends_on:
+      - db
+    restart: unless-stopped
+    volumes:
+      - ../app-gestion/backend:/usr/src/app
+      - /usr/src/app/node_modules
+
+volumes:
+  db_data:

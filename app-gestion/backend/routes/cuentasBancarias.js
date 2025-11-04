@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const router = express.Router();
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 
 // DB Connection
 const pool = new Pool({
@@ -12,7 +13,7 @@ const pool = new Pool({
 });
 
 // GET /cuentas-bancarias - Obtener todas las cuentas bancarias
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM Cuentas_Bancarias ORDER BY nombre_banco, numero_cuenta');
     res.json(result.rows);
@@ -23,7 +24,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /cuentas-bancarias/:id - Obtener una cuenta bancaria por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('SELECT * FROM Cuentas_Bancarias WHERE id_cuenta = $1', [id]);
@@ -38,7 +39,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /cuentas-bancarias - Crear una nueva cuenta bancaria
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { nombre_banco, tipo_cuenta, numero_cuenta, rut_titular, nombre_titular, email_titular } = req.body;
   try {
     const result = await pool.query(
@@ -53,7 +54,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /cuentas-bancarias/:id - Actualizar una cuenta bancaria
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const { nombre_banco, tipo_cuenta, numero_cuenta, rut_titular, nombre_titular, email_titular } = req.body;
   try {
@@ -72,7 +73,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /cuentas-bancarias/:id - Eliminar una cuenta bancaria
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM Cuentas_Bancarias WHERE id_cuenta = $1 RETURNING *', [id]);

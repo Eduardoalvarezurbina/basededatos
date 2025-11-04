@@ -72,6 +72,15 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
 
 ## 3. Historial de Cambios Detallado
 
+### Implementación de Autenticación y Autorización en Rutas del Backend
+- **Propósito:** Asegurar las rutas del API para que solo usuarios autenticados y autorizados puedan acceder a los recursos. Se busca proteger la información sensible y las operaciones críticas.
+- **Acciones:**
+    1.  Se creó un middleware de autenticación (`authMiddleware.js`) que verifica la validez de un token JWT (`verifyToken`) y autoriza el acceso basado en roles (`authorizeRole`).
+    2.  Se aplicó el middleware `verifyToken` a todas las rutas GET de las entidades de datos maestros para asegurar que solo usuarios autenticados puedan leer la información.
+    3.  Se aplicó el middleware `verifyToken` junto con `authorizeRole(['admin'])` a todas las rutas POST, PUT y DELETE para restringir la creación, actualización y eliminación de datos solo a los administradores.
+    4.  Se securizaron las siguientes rutas: `ubicaciones`, `tipos-cliente`, `inventario`, `ciudades`, `tipos-pago`, `fuentes-contacto`, `puntos-venta`, `trabajadores`, `regiones`, `comunas`, `categorias-cliente`, `clasificaciones-cliente`, `frecuencias-compra`, `tipos-consumo`, `cuentas-bancarias`, `clients` y `proveedores`.
+- **Estado Actual:** Completado. Todas las rutas de datos maestros del backend están protegidas.
+
 ### Depuración del Backend y Detección de Problema de Entorno Docker
 - **Propósito:** Verificar y completar el CRUD de las APIs del backend, lo que llevó a descubrir un problema fundamental con la configuración de Docker.
 - **Acciones:**

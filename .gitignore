@@ -1,24 +1,2 @@
-# macOS
-.DS_Store
-
-# Logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-nohup.out
-
-# Node
-node_modules
-dist
-.npm
-.yarn-integrity
-
-# Personal
-personal/
-trabajo/
-
-# Gemini backups
-.gemini_backups/
+# Ignore consolidated schema file
+proyecto-db/ddl/postgres_schema_consolidado.sql

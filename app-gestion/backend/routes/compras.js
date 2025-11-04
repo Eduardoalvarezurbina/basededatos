@@ -1,5 +1,6 @@
 const express = require('express');
 const { Pool } = require('pg');
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 const router = express.Router();
 
 // DB Connection
@@ -10,6 +11,8 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   port: parseInt(process.env.DB_PORT || "5432"),
 });
+
+router.use(verifyToken);
 
 // GET /compras - Obtener todas las compras con sus detalles
 router.get('/', async (req, res) => {
@@ -57,7 +60,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /compras - Crear una nueva compra y actualizar inventario
-router.post('/', async (req, res) => {
+router.post('/', authorizeRole(['admin']), async (req, res) => {
   const { id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva, detalles } = req.body;
   // 'detalles' es un array de { id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }
 
@@ -111,7 +114,7 @@ router.post('/', async (req, res) => {
 });
 
 // DELETE /compras/:id - Eliminar una compra y revertir el inventario
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const client = await pool.connect();
   try {
@@ -172,7 +175,7 @@ router.delete('/:id', async (req, res) => {
 // NOTA: Esta implementación no permite modificar los detalles de la compra (líneas de producto)
 // porque la lógica de revertir y reaplicar el inventario es compleja y propensa a errores.
 // Solo se actualizan los campos de la tabla principal `Compras`.
-router.put('/:id', async (req, res) => {
+router.put('/:id', authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const { id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva } = req.body;
 

@@ -2,28 +2,6 @@ const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
-const jwt = require('jsonwebtoken');
-
-const productsRouter = require('./routes/products');
-const ubicacionesRouter = require('./routes/ubicaciones');
-const tiposClienteRouter = require('./routes/tiposCliente');
-const inventarioRouter = require('./routes/inventario');
-const ciudadesRouter = require('./routes/ciudades');
-const tiposPagoRouter = require('./routes/tiposPago');
-const fuentesContactoRouter = require('./routes/fuentesContacto');
-const puntosVentaRouter = require('./routes/puntosVenta');
-const trabajadoresRouter = require('./routes/trabajadores');
-const regionesRouter = require('./routes/regiones');
-const comunasRouter = require('./routes/comunas');
-const categoriasClienteRouter = require('./routes/categoriasCliente');
-const clasificacionesClienteRouter = require('./routes/clasificacionesCliente');
-const frecuenciasCompraRouter = require('./routes/frecuenciasCompra');
-const tiposConsumoRouter = require('./routes/tiposConsumo');
-const cuentasBancariasRouter = require('./routes/cuentasBancarias');
-const clientsRouter = require('./routes/clients');
-const proveedoresRouter = require('./routes/proveedores');
-const comprasRouter = require('./routes/compras');
-const movimientosInventarioRouter = require('./routes/movimientosInventario');
 
 const app = express();
 const port = 3001;
@@ -41,27 +19,6 @@ const pool = new Pool({
 app.use(cors());
 app.use(express.json());
 
-app.use('/products', productsRouter);
-app.use('/ubicaciones', ubicacionesRouter);
-app.use('/tipos-cliente', tiposClienteRouter);
-app.use('/inventario', inventarioRouter);
-app.use('/ciudades', ciudadesRouter);
-app.use('/tipos-pago', tiposPagoRouter);
-app.use('/fuentes-contacto', fuentesContactoRouter);
-app.use('/puntos-venta', puntosVentaRouter);
-app.use('/trabajadores', trabajadoresRouter);
-app.use('/regiones', regionesRouter);
-app.use('/comunas', comunasRouter);
-app.use('/categorias-cliente', categoriasClienteRouter);
-app.use('/clasificaciones-cliente', clasificacionesClienteRouter);
-app.use('/frecuencias-compra', frecuenciasCompraRouter);
-app.use('/tipos-consumo', tiposConsumoRouter);
-app.use('/cuentas-bancarias', cuentasBancariasRouter);
-app.use('/clients', clientsRouter);
-app.use('/proveedores', proveedoresRouter);
-app.use('/compras', comprasRouter);
-app.use('/movimientos-inventario', movimientosInventarioRouter);
-
 app.get('/', (req, res) => {
   res.send('Hello from the backend!');
 });
@@ -69,36 +26,116 @@ app.get('/', (req, res) => {
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  const result = await pool.query('SELECT * FROM Usuarios WHERE username = $1', [username]);
-  const user = result.rows[0];
+  try {
+    const result = await pool.query('SELECT * FROM Usuarios WHERE username = $1', [username]);
+    const user = result.rows[0];
 
-  if (!user) {
-    return res.status(401).json({ message: 'Invalid credentials' });
+    if (!user) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
+    if (!passwordMatch) {
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+    res.json({ message: 'Login successful', role: user.role });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
   }
-
-  const passwordMatch = await bcrypt.compare(password, user.password_hash);
-
-  if (!passwordMatch) {
-    return res.status(401).json({ message: 'Invalid credentials' });
-  }
-
-  const token = jwt.sign({ id: user.id_usuario, role: user.role }, 'your_jwt_secret', { expiresIn: '1h' });
-
-  res.json({ message: 'Login successful', token });
 });
 
 
+app.get('/products', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM Productos ORDER BY id_producto');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
+app.post('/products', async (req, res) => {
+  const { nombre, categoria, unidad_medida } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO Productos (nombre, categoria, unidad_medida) VALUES ($1, $2, $3) RETURNING *',
+      [nombre, categoria, unidad_medida]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
+app.delete('/products/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM Productos WHERE id_producto = $1 RETURNING *', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.json({ message: 'Product deleted successfully', product: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
+app.put('/products/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nombre, categoria, unidad_medida, activo } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE Productos SET nombre = $1, categoria = $2, unidad_medida = $3, activo = $4 WHERE id_producto = $5 RETURNING *',
+      [nombre, categoria, unidad_medida, activo, id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    res.json({ message: 'Product updated successfully', product: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
-// GET /formatos-producto - Obtener todos los formatos de producto
+app.get('/products/active', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM Productos WHERE activo = TRUE ORDER BY nombre');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// --- Endpoints de Utilidad para Formularios ---
+
+// GET /ubicaciones - Obtener todas las ubicaciones de inventario
+app.get('/ubicaciones', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM Ubicaciones_Inventario ORDER BY nombre');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error getting locations:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// GET /formatos-producto - Obtener todos los formatos con nombre de producto
 app.get('/formatos-producto', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT fp.*, p.nombre as nombre_producto
+      SELECT fp.id_formato_producto, fp.formato, fp.precio_detalle_neto, fp.precio_mayorista_neto, p.nombre as nombre_producto
       FROM Formatos_Producto fp
       JOIN Productos p ON fp.id_producto = p.id_producto
+      WHERE p.activo = TRUE
       ORDER BY p.nombre, fp.formato
     `);
     res.json(result.rows);
@@ -108,41 +145,70 @@ app.get('/formatos-producto', async (req, res) => {
   }
 });
 
-// POST /formatos-producto - Crear un nuevo formato de producto
-app.post('/formatos-producto', async (req, res) => {
-  const { id_producto, formato, precio_detalle_neto, precio_mayorista_neto, ultimo_costo_neto, unidad_medida } = req.body;
+// --- Endpoints de Utilidad para Formularios ---
+
+// GET /ubicaciones - Obtener todas las ubicaciones de inventario
+app.get('/ubicaciones', async (req, res) => {
   try {
-    const result = await pool.query(
-      'INSERT INTO Formatos_Producto (id_producto, formato, precio_detalle_neto, precio_mayorista_neto, ultimo_costo_neto, unidad_medida) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [id_producto, formato, precio_detalle_neto, precio_mayorista_neto, ultimo_costo_neto, unidad_medida]
-    );
-    res.status(201).json(result.rows[0]);
+    const result = await pool.query('SELECT * FROM Ubicaciones_Inventario ORDER BY nombre');
+    res.json(result.rows);
   } catch (err) {
-    console.error('Error creating product format:', err);
-    res.status(500).json({ message: 'Internal server error', error: err.message });
+    console.error('Error getting locations:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// DELETE /formatos-producto/:id - Eliminar un formato de producto
-app.delete('/formatos-producto/:id', async (req, res) => {
-  const { id } = req.params;
+// GET /formatos-producto - Obtener todos los formatos con nombre de producto
+app.get('/formatos-producto', async (req, res) => {
   try {
-    // Importante: Considerar si se debe permitir borrar formatos usados en ventas, etc.
-    // Por ahora, se permite el borrado directo.
-    const result = await pool.query('DELETE FROM Formatos_Producto WHERE id_formato_producto = $1 RETURNING *', [id]);
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Product format not found' });
-    }
-    res.json({ message: 'Product format deleted successfully', formato: result.rows[0] });
+    const result = await pool.query(`
+      SELECT fp.id_formato_producto, fp.formato, fp.precio_detalle_neto, fp.precio_mayorista_neto, p.nombre as nombre_producto
+      FROM Formatos_Producto fp
+      JOIN Productos p ON fp.id_producto = p.id_producto
+      WHERE p.activo = TRUE
+      ORDER BY p.nombre, fp.formato
+    `);
+    res.json(result.rows);
   } catch (err) {
-    console.error('Error deleting product format:', err);
-    // Manejar error de FK si el formato está en uso
-    if (err.code === '23503') { // foreign_key_violation
-        return res.status(409).json({ message: 'Cannot delete this format because it is referenced by other records (e.g., inventory, sales).', error: err.detail });
-    }
-    res.status(500).json({ message: 'Internal server error', error: err.message });
+    console.error('Error getting product formats:', err);
+    res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+// GET /canales-compra - Obtener todos los canales de compra
+app.get('/canales-compra', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM Canales_Compra ORDER BY nombre_canal');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error getting purchase channels:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// GET /fuentes-contacto - Obtener todas las fuentes de contacto
+app.get('/fuentes-contacto', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM Fuentes_Contacto ORDER BY nombre_fuente');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error getting contact sources:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// GET /tipos-cliente - Obtener todos los tipos de cliente
+app.get('/tipos-cliente', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM Tipos_Cliente ORDER BY nombre_tipo');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error getting client types:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// --- Endpoints para Formatos de Producto y Historial de Precios ---
 
 // PUT /formatos-producto/:id - Actualizar un formato de producto y registrar cambios de precio
 app.put('/formatos-producto/:id', async (req, res) => {
@@ -267,6 +333,22 @@ app.put('/lotes/:id', async (req, res) => {
     res.json({ message: 'Lot updated successfully', lot: result.rows[0] });
   } catch (err) {
     console.error('Error updating lot:', err);
+    res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+});
+
+// DELETE /lotes/:id - Eliminar un lote
+app.delete('/lotes/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Opcional: Se podría verificar si el lote está en uso antes de borrar.
+    const result = await pool.query('DELETE FROM Lotes_Produccion WHERE id_lote = $1 RETURNING *', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Lot not found' });
+    }
+    res.json({ message: 'Lot deleted successfully', lot: result.rows[0] });
+  } catch (err) {
+    console.error('Error deleting lot:', err);
     res.status(500).json({ message: 'Internal server error', error: err.message });
   }
 });
@@ -676,7 +758,7 @@ app.delete('/reclamos/:id', async (req, res) => {
 
 // POST /pedidos - Agenda un pedido y descuenta el stock para reservar
 app.post('/pedidos', async (req, res) => {
-  const { id_cliente, id_trabajador, total, fecha_entrega, detalles } = req.body;
+  const { id_cliente, id_trabajador, total, detalles } = req.body;
   // 'detalles' es un array de { id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }
 
   if (!detalles || detalles.length === 0) {
@@ -689,8 +771,8 @@ app.post('/pedidos', async (req, res) => {
 
     // 1. Insertar en la tabla principal de Pedidos
     const pedidoResult = await client.query(
-      'INSERT INTO Pedidos (id_cliente, id_trabajador, total, estado, fecha, fecha_entrega) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP, $5) RETURNING id_pedido',
-      [id_cliente, id_trabajador, total, 'Agendado', fecha_entrega]
+      'INSERT INTO Pedidos (id_cliente, id_trabajador, total, estado, fecha) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING id_pedido',
+      [id_cliente, id_trabajador, total, 'Agendado']
     );
     const newPedidoId = pedidoResult.rows[0].id_pedido;
 
@@ -748,7 +830,7 @@ app.post('/pedidos/:id/convertir-a-venta', async (req, res) => {
         const ventaResult = await client.query(
             `INSERT INTO Ventas (id_cliente, id_punto_venta, id_tipo_pago, id_trabajador, neto_venta, iva_venta, total_bruto_venta, con_iva_venta, observacion, estado, estado_pago, con_factura, fecha, hora) 
              VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_DATE, CURRENT_TIME) RETURNING id_venta`,
-            [pedido.id_cliente, id_punto_venta, id_tipo_pago, pedido.id_trabajador, neto_venta, iva_venta, total_bruto_venta, true, observacion, 'Finalizada', estado_pago, con_factura]
+            [pedido.id_cliente, id_punto_venta, id_tipo_pago, pedido.id_trabajador, neto_venta, iva_venta, total_bruto_venta, con_factura, 'Finalizada', estado_pago, con_factura, observacion]
         );
         const newVentaId = ventaResult.rows[0].id_venta;
 
@@ -792,7 +874,7 @@ app.post('/pedidos/:id/convertir-a-venta', async (req, res) => {
 app.get('/pedidos', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT p.id_pedido, p.fecha, p.estado, p.total, p.fecha_entrega, c.nombre as nombre_cliente
+      SELECT p.id_pedido, p.fecha, p.estado, p.total, c.nombre as nombre_cliente
       FROM Pedidos p
       LEFT JOIN Clientes c ON p.id_cliente = c.id_cliente
       ORDER BY p.fecha DESC
@@ -808,7 +890,7 @@ app.get('/pedidos', async (req, res) => {
 app.get('/pedidos/:id', async (req, res) => {
     const { id } = req.params;
     try {
-        const pedidoResult = await pool.query('SELECT id_pedido, fecha, id_cliente, id_trabajador, estado, total, con_factura, fecha_entrega FROM Pedidos WHERE id_pedido = $1', [id]);
+        const pedidoResult = await pool.query('SELECT * FROM Pedidos WHERE id_pedido = $1', [id]);
         if (pedidoResult.rowCount === 0) {
             return res.status(404).json({ message: 'Order not found' });
         }
@@ -822,160 +904,188 @@ app.get('/pedidos/:id', async (req, res) => {
     }
 });
 
-// PUT /pedidos/:id - Actualizar un pedido
-app.put('/pedidos/:id', async (req, res) => {
-  const { id } = req.params;
-  const { id_cliente, id_trabajador, total, estado, fecha_entrega } = req.body;
+// POST /pedidos - Agenda un pedido y descuenta el stock para reservar
+app.post('/pedidos', async (req, res) => {
+  const { id_cliente, id_trabajador, total, detalles } = req.body;
+  // 'detalles' es un array de { id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }
+
+  if (!detalles || detalles.length === 0) {
+    return res.status(400).json({ message: 'Order details cannot be empty' });
+  }
 
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    const result = await client.query(
-      'UPDATE Pedidos SET id_cliente = $1, id_trabajador = $2, total = $3, estado = $4, fecha_entrega = $5 WHERE id_pedido = $6 RETURNING *',
-      [id_cliente, id_trabajador, total, estado, fecha_entrega, id]
+    // 1. Insertar en la tabla principal de Pedidos
+    const pedidoResult = await client.query(
+      'INSERT INTO Pedidos (id_cliente, id_trabajador, total, estado, fecha) VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP) RETURNING id_pedido',
+      [id_cliente, id_trabajador, total, 'Agendado']
     );
-    if (result.rowCount === 0) {
-      throw new Error('Order not found');
+    const newPedidoId = pedidoResult.rows[0].id_pedido;
+
+    // 2. Iterar sobre los detalles para insertarlos y descontar el inventario
+    for (const item of detalles) {
+      // 2a. Insertar en Detalle_Pedidos
+      await client.query(
+        'INSERT INTO Detalle_Pedidos (id_pedido, id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion) VALUES ($1, $2, $3, $4, $5, $6)',
+        [newPedidoId, item.id_formato_producto, item.cantidad, item.precio_unitario, item.id_lote, item.id_ubicacion]
+      );
+
+      // 2b. Descontar del inventario
+      const updateInventarioResult = await client.query(
+        'UPDATE Inventario SET stock_actual = stock_actual - $1, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_formato_producto = $2 AND id_ubicacion = $3 AND stock_actual >= $1',
+        [item.cantidad, item.id_formato_producto, item.id_ubicacion]
+      );
+      
+      if (updateInventarioResult.rowCount === 0) {
+        throw new Error(`Not enough stock for product format ${item.id_formato_producto} in location ${item.id_ubicacion}.`);
+      }
     }
 
     await client.query('COMMIT');
-    res.json({ message: 'Order updated successfully', pedido: result.rows[0] });
+    res.status(201).json({ message: 'Order scheduled successfully', id_pedido: newPedidoId });
+
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Error updating order:', err);
-    if (err.message === 'Order not found') {
-      return res.status(404).json({ message: err.message });
-    }
+    console.error('Error scheduling order:', err);
     res.status(500).json({ message: 'Internal server error', error: err.message });
   } finally {
     client.release();
   }
 });
 
-// --- Endpoints para Ventas ---
+// POST /pedidos/:id/convertir-a-venta - Convierte un pedido agendado en una venta final
+app.post('/pedidos/:id/convertir-a-venta', async (req, res) => {
+    const { id } = req.params;
+    const { id_punto_venta, id_tipo_pago, con_factura, neto_venta, iva_venta, total_bruto_venta, estado_pago, observacion } = req.body;
 
-// GET /ventas - Obtener un historial de todas las ventas
-app.get('/ventas', async (req, res) => {
+    const client = await pool.connect();
+    try {
+        await client.query('BEGIN');
+
+        // 1. Obtener datos del pedido y sus detalles
+        const pedidoResult = await client.query('SELECT * FROM Pedidos WHERE id_pedido = $1 AND estado = \'Agendado\'', [id]);
+        if (pedidoResult.rowCount === 0) {
+            throw new Error('Order not found or already processed.');
+        }
+        const pedido = pedidoResult.rows[0];
+
+        const detallesPedidoResult = await client.query('SELECT * FROM Detalle_Pedidos WHERE id_pedido = $1', [id]);
+        const detallesPedido = detallesPedidoResult.rows;
+
+        // 2. Crear el registro de Venta
+        const ventaResult = await client.query(
+            `INSERT INTO Ventas (id_cliente, id_punto_venta, id_tipo_pago, id_trabajador, neto_venta, iva_venta, total_bruto_venta, con_iva_venta, observacion, estado, estado_pago, con_factura, fecha, hora) 
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, CURRENT_DATE, CURRENT_TIME) RETURNING id_venta`,
+            [pedido.id_cliente, id_punto_venta, id_tipo_pago, pedido.id_trabajador, neto_venta, iva_venta, total_bruto_venta, con_factura, 'Finalizada', estado_pago, con_factura, observacion]
+        );
+        const newVentaId = ventaResult.rows[0].id_venta;
+
+        // 3. Crear los detalles de la venta, ahora con la información correcta
+        for (const detalle of detallesPedido) {
+            const loteResult = await client.query('SELECT costo_por_unidad FROM Lotes_Produccion WHERE id_lote = $1', [detalle.id_lote]);
+            if (loteResult.rowCount === 0) {
+                throw new Error(`Lot with id ${detalle.id_lote} not found for product in order.`);
+            }
+            const costoUnitario = loteResult.rows[0].costo_por_unidad;
+
+            await client.query(
+                'INSERT INTO Detalle_Ventas (id_venta, id_formato_producto, cantidad, precio_unitario, id_lote, costo_unitario_en_venta) VALUES ($1, $2, $3, $4, $5, $6)',
+                [newVentaId, detalle.id_formato_producto, detalle.cantidad, detalle.precio_unitario, detalle.id_lote, costoUnitario]
+            );
+        }
+        
+        // 4. Actualizar la fecha de última compra del cliente
+        if (pedido.id_cliente) {
+            await client.query('UPDATE Clientes SET fecha_ultima_compra = CURRENT_DATE WHERE id_cliente = $1', [pedido.id_cliente]);
+        }
+
+        // 5. Actualizar estado del pedido
+        await client.query('UPDATE Pedidos SET estado = \'Convertido a Venta\' WHERE id_pedido = $1', [id]);
+
+        await client.query('COMMIT');
+        res.status(201).json({ message: 'Order converted to sale successfully', id_venta: newVentaId });
+
+    } catch (err) {
+        await client.query('ROLLBACK');
+        console.error('Error converting order to sale:', err);
+        res.status(500).json({ message: 'Internal server error', error: err.message });
+    } finally {
+        client.release();
+    }
+});
+
+// --- Endpoints para Compras ---
+
+// GET /compras - Obtener todas las compras con sus detalles
+app.get('/compras', async (req, res) => {
   try {
+    // Esta consulta une Compras con sus detalles y el nombre del proveedor
     const result = await pool.query(`
       SELECT 
-        v.id_venta, v.fecha, v.total_bruto_venta, v.estado, v.estado_pago,
-        c.nombre as nombre_cliente
-      FROM Ventas v
-      LEFT JOIN Clientes c ON v.id_cliente = c.id_cliente
-      ORDER BY v.fecha DESC, v.hora DESC
+        c.id_compra, c.fecha, c.neto, c.iva, c.total, c.observacion, c.con_factura,
+        p.nombre as nombre_proveedor,
+        (SELECT json_agg(cd) FROM Detalle_Compras cd WHERE cd.id_compra = c.id_compra) as detalles
+      FROM Compras c
+      LEFT JOIN Proveedores p ON c.id_proveedor = p.id_proveedor
+      ORDER BY c.fecha DESC
     `);
     res.json(result.rows);
   } catch (err) {
-    console.error('Error getting sales history:', err);
+    console.error('Error getting purchases:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// GET /ventas/:id - Obtener el detalle completo de una venta
-app.get('/ventas/:id', async (req, res) => {
-  const { id } = req.params;
-  try {
-    // Consulta para la cabecera de la venta
-    const ventaResult = await pool.query(`
-      SELECT 
-        v.*, 
-        c.nombre as nombre_cliente, c.telefono as telefono_cliente, c.email as email_cliente,
-        pv.nombre as nombre_punto_venta,
-        tp.nombre_tipo_pago
-      FROM Ventas v
-      LEFT JOIN Clientes c ON v.id_cliente = c.id_cliente
-      LEFT JOIN Puntos_Venta pv ON v.id_punto_venta = pv.id_punto_venta
-      LEFT JOIN Tipos_Pago tp ON v.id_tipo_pago = tp.id_tipo_pago
-      WHERE v.id_venta = $1
-    `, [id]);
+// POST /compras - Crear una nueva compra y actualizar inventario
+app.post('/compras', async (req, res) => {
+  const { id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva, detalles } = req.body;
+  // 'detalles' es un array de { id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }
 
-    if (ventaResult.rowCount === 0) {
-      return res.status(404).json({ message: 'Sale not found' });
-    }
-
-    // Consulta para los detalles de la venta
-    const detallesResult = await pool.query(`
-      SELECT
-        dv.cantidad, dv.precio_unitario, dv.costo_unitario_en_venta,
-        fp.formato as formato_producto,
-        p.nombre as nombre_producto,
-        lp.codigo_lote
-      FROM Detalle_Ventas dv
-      JOIN Formatos_Producto fp ON dv.id_formato_producto = fp.id_formato_producto
-      JOIN Productos p ON fp.id_producto = p.id_producto
-      LEFT JOIN Lotes_Produccion lp ON dv.id_lote = lp.id_lote
-      WHERE dv.id_venta = $1
-    `, [id]);
-
-    const venta = ventaResult.rows[0];
-    venta.detalles = detallesResult.rows;
-
-    res.json(venta);
-
-  } catch (err) {
-    res.status(500).json({ message: 'Internal server error' });
+  if (!detalles || detalles.length === 0) {
+    return res.status(400).json({ message: 'Purchase details cannot be empty' });
   }
-});
 
-// DELETE /ventas/:id - Eliminar una venta y revertir el inventario
-app.delete('/ventas/:id', async (req, res) => {
-  const { id } = req.params;
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
 
-    // 1. Obtener los detalles de la venta para saber qué revertir
-    const detallesResult = await client.query('SELECT * FROM Detalle_Ventas WHERE id_venta = $1', [id]);
-    const detalles = detallesResult.rows;
+    // 1. Insertar en la tabla principal de Compras
+    const compraResult = await client.query(
+      'INSERT INTO Compras (id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva, fecha) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, CURRENT_DATE) RETURNING id_compra',
+      [id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva]
+    );
+    const newCompraId = compraResult.rows[0].id_compra;
 
-    if (detalles.length === 0) {
-      const ventaExistResult = await client.query('SELECT 1 FROM Ventas WHERE id_venta = $1', [id]);
-      if (ventaExistResult.rowCount === 0) {
-        throw new Error('Sale not found');
-      }
-    }
-
-    // 2. Revertir el inventario por cada detalle
+    // 2. Iterar sobre los detalles para insertarlos y actualizar el inventario
     for (const item of detalles) {
-      // Para la reversión, necesitamos la ubicación que se usó en el pedido original.
-      // Esta información no está en Detalle_Ventas. Asumiremos la ubicación del detalle del pedido si existe,
-      // o una ubicación por defecto. ESTO ES UNA LIMITACIÓN IMPORTANTE.
-      const detallePedidoResult = await client.query('SELECT id_ubicacion FROM Detalle_Pedidos WHERE id_formato_producto = $1 AND id_pedido = (SELECT id_pedido FROM Pedidos WHERE id_venta_asociada = $2)', [item.id_formato_producto, id]);
-      const id_ubicacion = detallePedidoResult.rowCount > 0 ? detallePedidoResult.rows[0].id_ubicacion : 1; // Fallback a Bodega Principal
+      // 2a. Insertar en Detalle_Compras
+      await client.query(
+        'INSERT INTO Detalle_Compras (id_compra, id_formato_producto, cantidad, precio_unitario, id_lote) VALUES ($1, $2, $3, $4, $5)',
+        [newCompraId, item.id_formato_producto, item.cantidad, item.precio_unitario, item.id_lote]
+      );
 
+      // 2b. Actualizar (o insertar) el inventario en la ubicación especificada
       const updateInventarioResult = await client.query(
-        'UPDATE Inventario SET stock_actual = stock_actual + $1 WHERE id_formato_producto = $2 AND id_ubicacion = $3',
-        [item.cantidad, item.id_formato_producto, id_ubicacion]
+        'UPDATE Inventario SET stock_actual = stock_actual + $1, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_formato_producto = $2 AND id_ubicacion = $3',
+        [item.cantidad, item.id_formato_producto, item.id_ubicacion]
       );
 
       if (updateInventarioResult.rowCount === 0) {
-        // Si no hay fila para actualizar, significa que el producto no está en esa ubicación, lo cual es un estado inconsistente.
-        // Creamos la fila de inventario para corregir.
-        await client.query('INSERT INTO Inventario (id_formato_producto, id_ubicacion, stock_actual) VALUES ($1, $2, $3)', [item.id_formato_producto, id_ubicacion, item.cantidad]);
+        await client.query(
+          'INSERT INTO Inventario (id_formato_producto, id_ubicacion, stock_actual, fecha_actualizacion) VALUES ($1, $2, $3, CURRENT_TIMESTAMP)',
+          [item.id_formato_producto, item.id_ubicacion, item.cantidad]
+        );
       }
     }
 
-    // 3. Eliminar los detalles de la venta
-    await client.query('DELETE FROM Detalle_Ventas WHERE id_venta = $1', [id]);
-
-    // 4. Eliminar la venta principal
-    const deleteVentaResult = await client.query('DELETE FROM Ventas WHERE id_venta = $1 RETURNING *', [id]);
-
-    if (deleteVentaResult.rowCount === 0) {
-        throw new Error('Sale not found');
-    }
-
     await client.query('COMMIT');
-    res.json({ message: 'Sale deleted and inventory rolled back successfully', venta: deleteVentaResult.rows[0] });
+    res.status(201).json({ message: 'Purchase created successfully', id_compra: newCompraId });
 
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Error deleting sale:', err);
-    if (err.message === 'Sale not found') {
-        return res.status(404).json({ message: err.message });
-    }
+    console.error('Error creating purchase:', err);
     res.status(500).json({ message: 'Internal server error', error: err.message });
   } finally {
     client.release();
@@ -985,10 +1095,10 @@ app.delete('/ventas/:id', async (req, res) => {
 // POST /ventas - Crear una nueva venta, descontar de inventario y registrar costos
 app.post('/ventas', async (req, res) => {
   // El body debe incluir datos de la venta y un array de 'detalles'
-  const {
-    id_cliente, id_punto_venta, id_tipo_pago, id_trabajador,
-    neto_venta, iva_venta, total_bruto_venta, con_iva_venta,
-    observacion, estado, estado_pago, con_factura, detalles
+  const { 
+    id_cliente, id_punto_venta, id_tipo_pago, id_trabajador, 
+    neto_venta, iva_venta, total_bruto_venta, con_iva_venta, 
+    observacion, estado, estado_pago, con_factura, detalles 
   } = req.body;
   // Cada item en 'detalles' debe ser: { id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }
 
@@ -1056,18 +1166,118 @@ app.post('/ventas', async (req, res) => {
   }
 });
 
+app.get('/clients', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT
+        c.*,
+        tc.nombre_tipo as nombre_tipo_cliente,
+        fc.nombre_fuente as nombre_fuente_contacto
+      FROM Clientes c
+      LEFT JOIN Tipos_Cliente tc ON c.id_tipo_cliente = tc.id_tipo_cliente
+      LEFT JOIN Fuentes_Contacto fc ON c.id_fuente_contacto = fc.id_fuente_contacto
+      ORDER BY c.id_cliente
+    `);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error getting clients:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+// GET /clientes/buscar - Buscar clientes por teléfono
+app.get('/clientes/buscar', async (req, res) => {
+  const { telefono } = req.query;
+  if (!telefono) {
+    return res.status(400).json({ message: 'Phone number query is required' });
+  }
+  try {
+    const result = await pool.query(
+      "SELECT * FROM Clientes WHERE telefono LIKE $1 ORDER BY nombre",
+      [`%${telefono}%`]
+    );
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error searching clients:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.post('/clients', async (req, res) => {
+  const { nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, id_cuenta_preferida, rut, email, fecha_ultima_compra, correo, id_tipo_cliente, id_comuna, fecha_inicio_cliente, id_canal_compra, id_frecuencia_compra, gasto_promedio_por_compra, ticket_promedio_total, preferencia_mix_berries, preferencia_pulpas, id_tipo_consumo, preferencia_envase, intereses_promociones, preferencia_alimentaria, epoca_compra_preferida, recibio_seguimiento_postventa, participo_promociones, tiene_deudas_pendientes, suscrito_newsletter, dejo_resenas, nivel_satisfaccion, segmento_vip, coordenadas_geograficas, fecha_cumpleanos, id_clasificacion_cliente, etiquetas_comportamiento } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO Clientes (nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, id_cuenta_preferida, rut, email, fecha_ultima_compra, correo, id_tipo_cliente, id_comuna, fecha_inicio_cliente, id_canal_compra, id_frecuencia_compra, gasto_promedio_por_compra, ticket_promedio_total, preferencia_mix_berries, preferencia_pulpas, id_tipo_consumo, preferencia_envase, intereses_promociones, preferencia_alimentaria, epoca_compra_preferida, recibio_seguimiento_postventa, participo_promociones, tiene_deudas_pendientes, suscrito_newsletter, dejo_resenas, nivel_satisfaccion, segmento_vip, coordenadas_geograficas, fecha_cumpleanos, id_clasificacion_cliente, etiquetas_comportamiento) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36) RETURNING *'
+      [nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, id_cuenta_preferida, rut, email, fecha_ultima_compra, correo, id_tipo_cliente, id_comuna, fecha_inicio_cliente, id_canal_compra, id_frecuencia_compra, gasto_promedio_por_compra, ticket_promedio_total, preferencia_mix_berries, preferencia_pulpas, id_tipo_consumo, preferencia_envase, intereses_promociones, preferencia_alimentaria, epoca_compra_preferida, recibio_seguimiento_postventa, participo_promociones, tiene_deudas_pendientes, suscrito_newsletter, dejo_resenas, nivel_satisfaccion, segmento_vip, coordenadas_geograficas, fecha_cumpleanos, id_clasificacion_cliente, etiquetas_comportamiento]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.put('/clients/:id', async (req, res) => {
+  const { id } = req.params;
+  const { nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, id_cuenta_preferida, rut, email, fecha_ultima_compra, correo, id_tipo_cliente, id_comuna, fecha_inicio_cliente, id_canal_compra, id_frecuencia_compra, gasto_promedio_por_compra, ticket_promedio_total, preferencia_mix_berries, preferencia_pulpas, id_tipo_consumo, preferencia_envase, intereses_promociones, preferencia_alimentaria, epoca_compra_preferida, recibio_seguimiento_postventa, participo_promociones, tiene_deudas_pendientes, suscrito_newsletter, dejo_resenas, nivel_satisfaccion, segmento_vip, coordenadas_geograficas, fecha_cumpleanos, id_clasificacion_cliente, etiquetas_comportamiento } = req.body;
+  try {
+    const result = await pool.query(
+      'UPDATE Clientes SET nombre = $1, telefono = $2, id_ciudad = $3, direccion = $4, id_categoria_cliente = $5, id_fuente_contacto = $6, id_cuenta_preferida = $7, rut = $8, email = $9, fecha_ultima_compra = $10, correo = $11, id_tipo_cliente = $12, id_comuna = $13, fecha_inicio_cliente = $14, id_canal_compra = $15, id_frecuencia_compra = $16, gasto_promedio_por_compra = $17, ticket_promedio_total = $18, preferencia_mix_berries = $19, preferencia_pulpas = $20, id_tipo_consumo = $21, preferencia_envase = $22, intereses_promociones = $23, preferencia_alimentaria = $24, epoca_compra_preferida = $25, recibio_seguimiento_postventa = $26, participo_promociones = $27, tiene_deudas_pendientes = $28, suscrito_newsletter = $29, dejo_resenas = $30, nivel_satisfaccion = $31, segmento_vip = $32, coordenadas_geograficas = $33, fecha_cumpleanos = $34, id_clasificacion_cliente = $35, etiquetas_comportamiento = $36 WHERE id_cliente = $37 RETURNING *'
+      [nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, id_cuenta_preferida, rut, email, fecha_ultima_compra, correo, id_tipo_cliente, id_comuna, fecha_inicio_cliente, id_canal_compra, id_frecuencia_compra, gasto_promedio_por_compra, ticket_promedio_total, preferencia_mix_berries, preferencia_pulpas, id_tipo_consumo, preferencia_envase, intereses_promociones, preferencia_alimentaria, epoca_compra_preferida, recibio_seguimiento_postventa, participo_promociones, tiene_deudas_pendientes, suscrito_newsletter, dejo_resenas, nivel_satisfaccion, segmento_vip, coordenadas_geograficas, fecha_cumpleanos, id_clasificacion_cliente, etiquetas_comportamiento, id]
+    );
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Client not found' });
+    }
+    res.json({ message: 'Client updated successfully', client: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
+
+app.delete('/clients/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query('DELETE FROM Clientes WHERE id_cliente = $1 RETURNING *', [id]);
+    if (result.rowCount === 0) {
+      return res.status(404).json({ message: 'Client not found' });
+    }
+    res.json({ message: 'Client deleted successfully', client: result.rows[0] });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 
+// --- Endpoints para Proveedores ---
 
+// GET /proveedores - Obtener todos los proveedores
+app.get('/proveedores', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM Proveedores ORDER BY nombre');
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error getting suppliers:', err);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
-const startServer = () => {
-  return app.listen(port, () => {
-    console.log(`Backend server listening at http://localhost:${port}`);
-  });
-};
+// POST /proveedores - Crear un nuevo proveedor
+app.post('/proveedores', async (req, res) => {
+  const { nombre, rut, telefono, email, direccion } = req.body;
+  try {
+    const result = await pool.query(
+      'INSERT INTO Proveedores (nombre, rut, telefono, email, direccion) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [nombre, rut, telefono, email, direccion]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error creating supplier:', err);
+    res.status(500).json({ message: 'Internal server error', error: err.message });
+  }
+});
 
-if (require.main === module) {
-  startServer();
-}
-
-module.exports = { app, pool, startServer };
+app.listen(port, () => {
+  console.log(`Backend server listening at http://localhost:${port}`);
+});

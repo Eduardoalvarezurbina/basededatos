@@ -1,0 +1,13 @@
+## Conversación con Gemini CLI - 25 de octubre de 2025
+
+**Usuario:** revisa el contexto de donde ibamos, y en que estabamos de readme y conversaciones, (aunque se perdio una conversacion final)
+
+**Gemini:** Claro, revisaré los archivos de estado para ponernos al día. Leeré el resumen de la base de datos, el README de la aplicación de gestión y el último registro de conversación.
+
+...
+
+**Gemini:** `README.md` actualizado.
+
+**2. Crear y Guardar Conversación:**
+
+Ahora, crearé un archivo de texto con la fecha de hoy en `/Users/eduardoalvarez/gemini-cli-projects/trabajo/conversaciones/` y guardaré toda nuestra conversación actual en él.

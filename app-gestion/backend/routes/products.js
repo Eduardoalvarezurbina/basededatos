@@ -1,5 +1,6 @@
 const express = require('express');
 const { Pool } = require('pg');
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 const router = express.Router();
 
 // DB Connection - This should ideally be passed or imported from a central config
@@ -10,6 +11,8 @@ const pool = new Pool({
   password: process.env.DB_PASSWORD,
   port: parseInt(process.env.DB_PORT || "5432"),
 });
+
+router.use(verifyToken);
 
 // GET /products - Obtener todos los productos
 router.get('/', async (req, res) => {
@@ -38,7 +41,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /products - Crear un nuevo producto
-router.post('/', async (req, res) => {
+router.post('/', authorizeRole(['admin']), async (req, res) => {
   const { nombre, categoria, unidad_medida } = req.body; // unidad_medida will be ignored after schema change
   try {
     const result = await pool.query(
@@ -53,7 +56,7 @@ router.post('/', async (req, res) => {
 });
 
 // DELETE /products/:id - Eliminar un producto
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM Productos WHERE id_producto = $1 RETURNING *', [id]);
@@ -68,7 +71,7 @@ router.delete('/:id', async (req, res) => {
 });
 
 // PUT /products/:id - Actualizar un producto
-router.put('/:id', async (req, res) => {
+router.put('/:id', authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const { nombre, categoria, activo } = req.body; // Removed unidad_medida
   try {

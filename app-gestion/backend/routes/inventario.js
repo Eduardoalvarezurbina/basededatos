@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const router = express.Router();
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 
 // DB Connection - This should ideally be passed or imported from a central config
 const pool = new Pool({
@@ -12,7 +13,7 @@ const pool = new Pool({
 });
 
 // GET /inventario/stock/:id_formato_producto/:id_ubicacion - Obtener el stock actual de un formato de producto en una ubicación específica
-router.get('/stock/:id_formato_producto/:id_ubicacion', async (req, res) => {
+router.get('/stock/:id_formato_producto/:id_ubicacion', verifyToken, async (req, res) => {
   const { id_formato_producto, id_ubicacion } = req.params;
   try {
     const result = await pool.query(
@@ -30,7 +31,7 @@ router.get('/stock/:id_formato_producto/:id_ubicacion', async (req, res) => {
 });
 
 // POST /inventario - (For testing purposes) Manually insert or update stock
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id_formato_producto, id_ubicacion, stock_actual } = req.body;
 
   if (id_formato_producto === undefined || id_ubicacion === undefined || stock_actual === undefined) {

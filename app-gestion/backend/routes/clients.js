@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const router = express.Router();
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 
 // DB Connection
 const pool = new Pool({
@@ -12,7 +13,7 @@ const pool = new Pool({
 });
 
 // GET /clients - Obtener todos los clientes con información adicional
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT
@@ -40,7 +41,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /clients/:id - Obtener un cliente por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(`
@@ -72,7 +73,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // GET /clientes/buscar - Buscar clientes por teléfono
-router.get('/buscar', async (req, res) => {
+router.get('/buscar', verifyToken, async (req, res) => {
   const { telefono } = req.query;
   if (!telefono) {
     return res.status(400).json({ message: 'Phone number query is required' });
@@ -90,7 +91,7 @@ router.get('/buscar', async (req, res) => {
 });
 
 // POST /clients - Crear un nuevo cliente
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, authorizeRole(['admin']), async (req, res) => {
     const {
       nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto,
       id_cuenta_preferida, rut, email, correo, id_tipo_cliente, id_comuna,
@@ -135,7 +136,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /clients/:id - Actualizar un cliente
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const { 
     nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, 
@@ -185,7 +186,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /clients/:id - Eliminar un cliente
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM Clientes WHERE id_cliente = $1 RETURNING *', [id]);

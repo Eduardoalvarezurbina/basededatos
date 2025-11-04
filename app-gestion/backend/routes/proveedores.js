@@ -1,6 +1,7 @@
 const express = require('express');
 const { Pool } = require('pg');
 const router = express.Router();
+const { verifyToken, authorizeRole } = require('./authMiddleware');
 
 // DB Connection
 const pool = new Pool({
@@ -12,7 +13,7 @@ const pool = new Pool({
 });
 
 // GET /proveedores - Obtener todos los proveedores
-router.get('/', async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
   try {
     const result = await pool.query(`
       SELECT p.*, c.nombre_ciudad as nombre_ciudad
@@ -28,7 +29,7 @@ router.get('/', async (req, res) => {
 });
 
 // GET /proveedores/:id - Obtener un proveedor por ID
-router.get('/:id', async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query(`
@@ -48,7 +49,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /proveedores - Crear un nuevo proveedor
-router.post('/', async (req, res) => {
+router.post('/', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { nombre, rut, telefono, id_ciudad } = req.body;
   try {
     const result = await pool.query(
@@ -63,7 +64,7 @@ router.post('/', async (req, res) => {
 });
 
 // PUT /proveedores/:id - Actualizar un proveedor
-router.put('/:id', async (req, res) => {
+router.put('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   const { nombre, rut, telefono, id_ciudad } = req.body;
   try {
@@ -82,7 +83,7 @@ router.put('/:id', async (req, res) => {
 });
 
 // DELETE /proveedores/:id - Eliminar un proveedor
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', verifyToken, authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
   try {
     const result = await pool.query('DELETE FROM Proveedores WHERE id_proveedor = $1 RETURNING *', [id]);
