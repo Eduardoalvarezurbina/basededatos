@@ -1,5 +1,12 @@
 ## Avance del Proyecto
 
+### miércoles, 5 de noviembre de 2025
+
+- **Descripción:**
+  - Se refactorizó y se crearon pruebas para el módulo de `Ventas`.
+  - Se corrigieron errores en el esquema de la base de datos de prueba.
+  - Se actualizó el script `test-setup.js` para manejar las migraciones de la base de datos de forma incremental.
+
 ### martes, 4 de noviembre de 2025
 
 - **Descripción:**
@@ -17,7 +24,7 @@
         *   [DONE] Configuración de pruebas y refactorización completada.
         *   [DONE] Suite de pruebas expandida para cubrir escenarios de creación, lectura, actualización y eliminación (CRUD), incluyendo casos límite y manejo de errores de validación.
     *   **Ventas:**
-        *   [TODO] Iniciar refactorización y creación de pruebas.
+        *   [DONE] Refactorización y creación de pruebas completada.
 2.  **Asegurar Rutas Restantes (products, lotes, produccion, reclamos, compras, ventas):**
     *   [TODO] Pendiente.
 3.  **Pruebas Exhaustivas:**

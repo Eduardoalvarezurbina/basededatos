@@ -390,7 +390,9 @@ const startServer = () => {
 };
 
 if (require.main === module) {
-  startServer();
+  app.listen(port, () => {
+    console.log(`Backend server listening at http://localhost:${port}`);
+  });
 }
 
-module.exports = { app, pool, startServer };
+module.exports = { app, pool };

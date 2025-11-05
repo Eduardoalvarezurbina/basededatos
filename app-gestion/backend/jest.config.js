@@ -1,4 +1,5 @@
 module.exports = {
   testEnvironment: 'node',
+  globalSetup: './test-setup.js',
   setupFiles: ["dotenv/config"],
 };

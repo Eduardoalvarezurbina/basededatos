@@ -157,6 +157,9 @@ CREATE TABLE IF NOT EXISTS Ventas (
 
 CREATE TABLE IF NOT EXISTS Detalle_Compras (
     id_detalle_compra SERIAL PRIMARY KEY,
+    id_compra INT REFERENCES Compras(id_compra),
+    id_formato_producto INT REFERENCES Formatos_Producto(id_formato_producto),
+    cantidad DECIMAL(10, 2),
     precio_unitario DECIMAL(10, 2),
     id_lote INT,
     id_ubicacion INT

@@ -44,9 +44,18 @@ router.get('/', async (req, res) => {
       SELECT 
         c.id_compra, c.fecha, c.neto, c.iva, c.total, c.observacion, c.con_factura,
         p.nombre as nombre_proveedor,
-        (SELECT json_agg(cd) FROM Detalle_Compras cd WHERE cd.id_compra = c.id_compra) as detalles
+        json_agg(json_build_object(
+          'id_detalle_compra', dc.id_detalle_compra,
+          'id_formato_producto', dc.id_formato_producto,
+          'cantidad', dc.cantidad,
+          'precio_unitario', dc.precio_unitario,
+          'id_lote', dc.id_lote,
+          'id_ubicacion', dc.id_ubicacion
+        )) as detalles
       FROM Compras c
       LEFT JOIN Proveedores p ON c.id_proveedor = p.id_proveedor
+      LEFT JOIN Detalle_Compras dc ON c.id_compra = dc.id_compra
+      GROUP BY c.id_compra, p.nombre
       ORDER BY c.fecha DESC
     `);
     res.json(result.rows);
@@ -64,10 +73,19 @@ router.get('/:id', async (req, res) => {
       SELECT 
         c.id_compra, c.fecha, c.neto, c.iva, c.total, c.observacion, c.con_factura,
         p.nombre as nombre_proveedor,
-        (SELECT json_agg(cd) FROM Detalle_Compras cd WHERE cd.id_compra = c.id_compra) as detalles
+        json_agg(json_build_object(
+          'id_detalle_compra', dc.id_detalle_compra,
+          'id_formato_producto', dc.id_formato_producto,
+          'cantidad', dc.cantidad,
+          'precio_unitario', dc.precio_unitario,
+          'id_lote', dc.id_lote,
+          'id_ubicacion', dc.id_ubicacion
+        )) as detalles
       FROM Compras c
       LEFT JOIN Proveedores p ON c.id_proveedor = p.id_proveedor
+      LEFT JOIN Detalle_Compras dc ON c.id_compra = dc.id_compra
       WHERE c.id_compra = $1
+      GROUP BY c.id_compra, p.nombre
     `, [id]);
 
     if (result.rowCount === 0) {
@@ -82,48 +100,10 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /compras - Crear una nueva compra y actualizar inventario
-router.post('/', authorizeRole(['admin']), async (req, res) => {
+const { validateCompra } = require('./validation/compras');
+
+router.post('/', authorizeRole(['admin']), validateCompra, async (req, res) => {
   const { id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva, detalles } = req.body;
-
-  // Basic validation for required fields
-  if (id_proveedor === undefined) {
-    return res.status(400).json({ message: 'id_proveedor es requerido.' });
-  }
-  if (id_tipo_pago === undefined) {
-    return res.status(400).json({ message: 'id_tipo_pago es requerido.' });
-  }
-  if (id_cuenta_origen === undefined) {
-    return res.status(400).json({ message: 'id_cuenta_origen es requerido.' });
-  }
-  if (neto === undefined) {
-    return res.status(400).json({ message: 'neto es requerido.' });
-  }
-  if (iva === undefined) {
-    return res.status(400).json({ message: 'iva es requerido.' });
-  }
-  if (total === undefined) {
-    return res.status(400).json({ message: 'total es requerido.' });
-  }
-  if (con_factura === undefined) {
-    return res.status(400).json({ message: 'con_factura es requerido.' });
-  }
-  if (con_iva === undefined) {
-    return res.status(400).json({ message: 'con_iva es requerido.' });
-  }
-  if (!Array.isArray(detalles)) {
-    return res.status(400).json({ message: 'detalles de compra deben ser un array.' });
-  }
-  if (detalles.length === 0) {
-    return res.status(400).json({ message: 'detalles de compra no pueden estar vacíos.' });
-  }
-
-  // Type validation
-  if (typeof neto !== 'number' || typeof iva !== 'number' || typeof total !== 'number') {
-    return res.status(400).json({ message: 'neto, iva y total deben ser números.' });
-  }
-  if (typeof con_factura !== 'boolean' || typeof con_iva !== 'boolean') {
-    return res.status(400).json({ message: 'con_factura y con_iva deben ser booleanos.' });
-  }
 
 
   const client = await pool.connect();
@@ -249,7 +229,7 @@ router.delete('/:id', authorizeRole(['admin']), async (req, res) => {
 // Solo se actualizan los campos de la tabla principal `Compras`.
 router.put('/:id', authorizeRole(['admin']), async (req, res) => {
   const { id } = req.params;
-  const { id_proveedor, id_tipo_pago, id_cuenta_origen, neto, iva, total, observacion, con_factura, con_iva } = req.body;
+
 
   // Basic validation for data types
   if (neto !== undefined && typeof neto !== 'number') {

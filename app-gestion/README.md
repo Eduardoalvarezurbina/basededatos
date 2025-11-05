@@ -72,6 +72,16 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
 
 ## 3. Historial de Cambios Detallado
 
+### Refactorización y Pruebas del Módulo de Ventas
+- **Propósito:** Asegurar la robustez y el correcto funcionamiento del módulo de `Ventas` a través de la refactorización del código y la creación de una suite de pruebas completa.
+- **Acciones:**
+    1.  Se creó un archivo de pruebas `ventas.test.js` para el módulo de `Ventas`.
+    2.  Se refactorizó el script de configuración de la base de datos de prueba (`test-setup.js`) para manejar las migraciones de forma incremental, evitando errores de duplicación de esquema.
+    3.  Se corrigieron varios errores en el esquema de la base de datos que se detectaron durante la creación de las pruebas.
+    4.  Se implementaron pruebas para los endpoints `GET /ventas`, `GET /ventas/:id`, `POST /ventas` (con datos válidos e inválidos) y `DELETE /ventas/:id`.
+    5.  Se corrigió un error en la ruta `DELETE /ventas/:id` que impedía la correcta reversión del inventario.
+- **Estado Actual:** Completado. El módulo de `Ventas` está refactorizado y cuenta con una suite de pruebas que cubre los escenarios principales.
+
 ### Implementación de Autenticación y Autorización en Rutas del Backend
 - **Propósito:** Asegurar las rutas del API para que solo usuarios autenticados y autorizados puedan acceder a los recursos. Se busca proteger la información sensible y las operaciones críticas.
 - **Acciones:**

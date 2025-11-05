@@ -1,47 +1,35 @@
 const request = require('supertest');
-const { app, pool, startServer } = require('./index');
+const { app, pool } = require('./index'); // Import the app and pool
+const bcrypt = require('bcrypt');
 
 describe('Compras API', () => {
-  let server;
-  let testApp;
   let token;
 
   beforeAll(async () => {
-    const { app: startedApp, server: startedServer } = await startServer();
-    testApp = startedApp;
-    server = startedServer;
-
-    // Get a token for the tests
-    const res = await request(testApp)
+    // Create a test user and get a token
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash('password', salt);
+    await pool.query("INSERT INTO Usuarios (username, password_hash, role) VALUES ('testuser', $1, 'admin') ON CONFLICT (username) DO NOTHING", [hashedPassword]);
+    const res = await request(app)
       .post('/login')
       .send({
-        username: 'admin',
-        password: 'admin'
+        username: 'testuser',
+        password: 'password',
       });
     token = res.body.token;
   });
 
-
-
-      beforeEach(async () => {
-
-
-
-        // No seeding needed here, globalSetup handles it
-
-
-
-      });
   afterAll(async () => {
-    await pool.end();
-    server.close();
+    // Clean up the database
+    await pool.query("DELETE FROM Usuarios WHERE username = 'testuser'");
+    pool.end();
   });
 
   describe('GET /compras', () => {
     it('should return an empty array if no purchases exist', async () => {
       await pool.query('DELETE FROM Detalle_Compras');
       await pool.query('DELETE FROM Compras');
-      const res = await request(testApp)
+      const res = await request(app)
         .get('/compras')
         .set('Authorization', `Bearer ${token}`);
       expect(res.statusCode).toEqual(200);
@@ -50,7 +38,7 @@ describe('Compras API', () => {
 
     it('should return all purchases', async () => {
       // Insert multiple purchases
-      await request(testApp)
+      await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -73,7 +61,7 @@ describe('Compras API', () => {
             }
           ]
         });
-      await request(testApp)
+      await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -97,7 +85,7 @@ describe('Compras API', () => {
           ]
         });
 
-      const res = await request(testApp)
+      const res = await request(app)
         .get('/compras')
         .set('Authorization', `Bearer ${token}`);
       expect(res.statusCode).toEqual(200);
@@ -108,7 +96,7 @@ describe('Compras API', () => {
 
   describe('GET /compras/:id', () => {
     it('should retrieve a specific purchase by ID', async () => {
-      const newPurchase = await request(testApp)
+      const newPurchase = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -132,7 +120,7 @@ describe('Compras API', () => {
           ]
         });
 
-      const res = await request(testApp)
+      const res = await request(app)
         .get(`/compras/${newPurchase.body.id_compra}`)
         .set('Authorization', `Bearer ${token}`);
 
@@ -142,7 +130,7 @@ describe('Compras API', () => {
     });
 
     it('should return 404 for a non-existent purchase ID', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .get('/compras/9999')
         .set('Authorization', `Bearer ${token}`);
 
@@ -153,7 +141,7 @@ describe('Compras API', () => {
 
   describe('PUT /compras/:id', () => {
     it('should update an existing purchase with valid data', async () => {
-      const newPurchase = await request(testApp)
+      const newPurchase = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -189,7 +177,7 @@ describe('Compras API', () => {
         con_iva: false
       };
 
-      const res = await request(testApp)
+      const res = await request(app)
         .put(`/compras/${newPurchase.body.id_compra}`)
         .set('Authorization', `Bearer ${token}`)
         .send(updatedData);
@@ -212,7 +200,7 @@ describe('Compras API', () => {
         con_iva: false
       };
 
-      const res = await request(testApp)
+      const res = await request(app)
         .put('/compras/9999')
         .set('Authorization', `Bearer ${token}`)
         .send(updatedData);
@@ -222,7 +210,7 @@ describe('Compras API', () => {
     });
 
     it('should return 400 when updating with invalid data', async () => {
-      const newPurchase = await request(testApp)
+      const newPurchase = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -250,7 +238,7 @@ describe('Compras API', () => {
         neto: 'invalid'
       };
 
-      const res = await request(testApp)
+      const res = await request(app)
         .put(`/compras/${newPurchase.body.id_compra}`)
         .set('Authorization', `Bearer ${token}`)
         .send(invalidData);
@@ -262,7 +250,7 @@ describe('Compras API', () => {
 
   describe('DELETE /compras/:id', () => {
     it('should delete an existing purchase', async () => {
-      const newPurchase = await request(testApp)
+      const newPurchase = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -286,7 +274,7 @@ describe('Compras API', () => {
           ]
         });
 
-      const res = await request(testApp)
+      const res = await request(app)
         .delete(`/compras/${newPurchase.body.id_compra}`)
         .set('Authorization', `Bearer ${token}`);
 
@@ -295,7 +283,7 @@ describe('Compras API', () => {
     });
 
     it('should return 404 when deleting a non-existent purchase', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .delete('/compras/9999')
         .set('Authorization', `Bearer ${token}`);
 
@@ -307,7 +295,7 @@ describe('Compras API', () => {
   describe('POST /compras', () => {
     it('should create a new purchase', async () => {
       // You will need to insert a provider, a product, a format, a location, a payment type and a bank account for this test to pass
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -335,7 +323,7 @@ describe('Compras API', () => {
     });
 
     it('should return 400 if id_proveedor is missing', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -358,11 +346,11 @@ describe('Compras API', () => {
           ]
         });
       expect(res.statusCode).toEqual(400);
-      expect(res.body).toHaveProperty('message', 'id_proveedor es requerido.');
+      expect(res.body.errors[0].msg).toBe('id_proveedor es requerido.');
     });
 
     it('should return 400 if neto is missing', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -385,11 +373,11 @@ describe('Compras API', () => {
           ]
         });
       expect(res.statusCode).toEqual(400);
-      expect(res.body).toHaveProperty('message', 'neto es requerido.');
+      expect(res.body.errors[0].msg).toBe('neto es requerido.');
     });
 
     it('should return 400 if detalles is missing', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -404,11 +392,11 @@ describe('Compras API', () => {
           con_iva: true,
         });
       expect(res.statusCode).toEqual(400);
-      expect(res.body).toHaveProperty('message', 'detalles de compra deben ser un array.');
+      expect(res.body.errors[0].msg).toBe('detalles de compra deben ser un array.');
     });
 
     it('should return 400 if neto is not a number', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -432,11 +420,11 @@ describe('Compras API', () => {
           ]
         });
       expect(res.statusCode).toEqual(400);
-      expect(res.body).toHaveProperty('message', 'neto, iva y total deben ser números.');
+      expect(res.body.errors[0].msg).toBe('neto debe ser un número.');
     });
 
     it('should return 400 if detalles is an empty array', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -452,11 +440,11 @@ describe('Compras API', () => {
           detalles: []
         });
       expect(res.statusCode).toEqual(400);
-      expect(res.body).toHaveProperty('message', 'detalles de compra no pueden estar vacíos.');
+      expect(res.body.errors[0].msg).toBe('detalles de compra no pueden estar vacíos.');
     });
 
     it('should return 400 if id_formato_producto in detalles is invalid', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -484,7 +472,7 @@ describe('Compras API', () => {
     });
 
     it('should return 400 if id_ubicacion in detalles is invalid', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -512,7 +500,7 @@ describe('Compras API', () => {
     });
 
     it('should return 400 if id_proveedor is invalid', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -540,7 +528,7 @@ describe('Compras API', () => {
     });
 
     it('should return 400 if id_tipo_pago is invalid', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -568,7 +556,7 @@ describe('Compras API', () => {
     });
 
     it('should create a purchase with con_iva: false', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -596,7 +584,7 @@ describe('Compras API', () => {
     });
 
     it('should create a purchase with multiple detalles', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -631,7 +619,7 @@ describe('Compras API', () => {
     });
 
     it('should return 400 if id_cuenta_origen is invalid', async () => {
-      const res = await request(testApp)
+      const res = await request(app)
         .post('/compras')
         .set('Authorization', `Bearer ${token}`)
         .send({
