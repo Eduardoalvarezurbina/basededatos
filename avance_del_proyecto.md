@@ -6,7 +6,7 @@
 
 Tras un análisis detallado del backend y la base de datos, se ha definido la siguiente hoja de ruta para las próximas implementaciones, ordenada por prioridad:
 
-1.  **CRUD para Formatos de Producto y Procesos:**
+1.  **[DONE] CRUD para Formatos de Producto y Procesos:**
     *   Crear endpoints dedicados para la gestión completa (crear, leer, actualizar, eliminar) de `Formatos_Producto` y `Procesos` (recetas), permitiendo a la administración configurar el sistema sin acceder a la base de datos.
 
 2.  **Gestión de Caja:**

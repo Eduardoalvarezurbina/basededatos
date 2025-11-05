@@ -73,6 +73,7 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
 **ESTADO: PENDIENTE**
 
 *   **Paso 4.1: CRUD de Formatos de Producto y Procesos:**
+    *   **ESTADO:** HECHO.
     *   **Prioridad:** Alta.
     *   **Objetivo:** Crear APIs para gestionar `Formatos_Producto` y `Procesos` (recetas), permitiendo a los administradores configurar el catálogo de productos y las operaciones de producción desde el frontend.
 

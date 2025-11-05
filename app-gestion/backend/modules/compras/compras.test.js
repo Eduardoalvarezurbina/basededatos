@@ -25,36 +25,38 @@ describe('Compras API', () => {
     token = res.body.token;
 
     // Create test data
-    const proveedorRes = await pool.query("INSERT INTO Proveedores (nombre, telefono) VALUES ('Test Proveedor', '123456789') RETURNING id_proveedor");
+    const proveedorRes = await pool.query("INSERT INTO Proveedores (nombre, telefono) VALUES ('Test Proveedor Compras', '123456789') RETURNING id_proveedor");
     proveedorId = proveedorRes.rows[0].id_proveedor;
 
-    const productoRes = await pool.query("INSERT INTO Productos (nombre) VALUES ('Test Producto') RETURNING id_producto");
+    const productoRes = await pool.query("INSERT INTO Productos (nombre) VALUES ('Test Producto Compras') RETURNING id_producto");
     productoId = productoRes.rows[0].id_producto;
 
-    const formatoRes = await pool.query("INSERT INTO Formatos_Producto (id_producto, formato, precio_detalle_neto, precio_mayorista_neto, ultimo_costo_neto, unidad_medida) VALUES ($1, 'Test Formato', 100, 90, 80, 'unidad') RETURNING id_formato_producto", [productoId]);
+    const formatoRes = await pool.query("INSERT INTO Formatos_Producto (id_producto, formato, precio_detalle_neto, precio_mayorista_neto, ultimo_costo_neto, unidad_medida) VALUES ($1, 'Test Formato Compras', 100, 90, 80, 'unidad') RETURNING id_formato_producto", [productoId]);
     formatoId = formatoRes.rows[0].id_formato_producto;
 
-    const ubicacionRes = await pool.query("INSERT INTO Ubicaciones_Inventario (nombre) VALUES ('Test Ubicacion') RETURNING id_ubicacion");
+    const ubicacionRes = await pool.query("INSERT INTO Ubicaciones_Inventario (nombre) VALUES ('Test Ubicacion Compras') RETURNING id_ubicacion");
     ubicacionId = ubicacionRes.rows[0].id_ubicacion;
 
-    const tipoPagoRes = await pool.query("INSERT INTO Tipos_Pago (nombre_tipo_pago) VALUES ('Test Tipo Pago') RETURNING id_tipo_pago");
+    const tipoPagoRes = await pool.query("INSERT INTO Tipos_Pago (nombre_tipo_pago) VALUES ('Test Tipo Pago Compras') RETURNING id_tipo_pago");
     tipoPagoId = tipoPagoRes.rows[0].id_tipo_pago;
 
-    const cuentaRes = await pool.query("INSERT INTO Cuentas_Bancarias (nombre_banco, numero_cuenta, nombre_titular) VALUES ('Test Banco', '123456789', 'Test Titular') RETURNING id_cuenta");
+    const cuentaRes = await pool.query("INSERT INTO Cuentas_Bancarias (nombre_banco, numero_cuenta, nombre_titular) VALUES ('Test Banco Compras', '123456789', 'Test Titular Compras') RETURNING id_cuenta");
     cuentaId = cuentaRes.rows[0].id_cuenta;
   });
 
   afterAll(async () => {
     // Clean up the database
+    await pool.query("DELETE FROM Detalle_Ventas");
     await pool.query("DELETE FROM Detalle_Compras");
     await pool.query("DELETE FROM Compras");
-    await pool.query("DELETE FROM Inventario WHERE id_formato_producto = $1", [formatoId]);
-    await pool.query("DELETE FROM Formatos_Producto WHERE id_formato_producto = $1", [formatoId]);
-    await pool.query("DELETE FROM Productos WHERE id_producto = $1", [productoId]);
-    await pool.query("DELETE FROM Proveedores WHERE id_proveedor = $1", [proveedorId]);
-    await pool.query("DELETE FROM Ubicaciones_Inventario WHERE id_ubicacion = $1", [ubicacionId]);
-    await pool.query("DELETE FROM Tipos_Pago WHERE id_tipo_pago = $1", [tipoPagoId]);
-    await pool.query("DELETE FROM Cuentas_Bancarias WHERE id_cuenta = $1", [cuentaId]);
+    await pool.query("DELETE FROM Ventas");
+    await pool.query("DELETE FROM Inventario");
+    await pool.query("DELETE FROM Formatos_Producto");
+    await pool.query("DELETE FROM Productos");
+    await pool.query("DELETE FROM Proveedores");
+    await pool.query("DELETE FROM Ubicaciones_Inventario");
+    await pool.query("DELETE FROM Tipos_Pago");
+    await pool.query("DELETE FROM Cuentas_Bancarias");
     await pool.query("DELETE FROM Usuarios WHERE username = 'testuser'");
     pool.end();
   });
