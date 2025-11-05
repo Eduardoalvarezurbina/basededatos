@@ -72,6 +72,18 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
 
 ## 3. Historial de Cambios Detallado
 
+### Refactorización de la Estructura del Backend
+- **Propósito:** Mejorar la organización y mantenibilidad del código del backend, agrupando los archivos por funcionalidad en módulos.
+- **Acciones:**
+    1.  Se creó una nueva carpeta `app-gestion/backend/modules/`.
+    2.  Se movieron todos los archivos de rutas de la carpeta `routes/` a sus correspondientes subcarpetas dentro de `modules/` (ej. `modules/clientes/clientes.js`).
+    3.  Se movieron los archivos de pruebas (`.test.js`) a la carpeta del módulo correspondiente.
+    4.  Se actualizó el archivo principal `index.js` para importar las rutas desde sus nuevas ubicaciones.
+    5.  Se actualizó la configuración de Jest (`jest.config.js`) para que encuentre los archivos de prueba en la nueva estructura.
+    6.  Se corrigieron errores en el módulo de `compras` y sus pruebas, que surgieron a raíz de la reestructuración.
+    7.  Se eliminó el archivo de prueba obsoleto `api_test.js`.
+- **Estado Actual:** Completado. El backend ahora sigue una estructura modular basada en funcionalidades.
+
 ### Refactorización y Pruebas del Módulo de Ventas
 - **Propósito:** Asegurar la robustez y el correcto funcionamiento del módulo de `Ventas` a través de la refactorización del código y la creación de una suite de pruebas completa.
 - **Acciones:**

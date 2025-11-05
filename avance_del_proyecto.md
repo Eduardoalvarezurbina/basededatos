@@ -1,6 +1,15 @@
 ## Avance del Proyecto
 
+## Avance del Proyecto
+
 ### miércoles, 5 de noviembre de 2025
+
+- **Descripción:**
+  - Se refactorizó la estructura del backend para organizar las rutas en módulos individuales, siguiendo las mejores prácticas de desarrollo.
+  - Se movieron los archivos de rutas y pruebas a sus correspondientes carpetas de módulo.
+  - Se actualizaron los archivos `index.js` y `jest.config.js` para reflejar la nueva estructura.
+  - Se corrigieron errores en el módulo de `compras` y sus pruebas.
+  - Se eliminó el archivo de prueba obsoleto `api_test.js`.
 
 - **Descripción:**
   - Se refactorizó y se crearon pruebas para el módulo de `Ventas`.
