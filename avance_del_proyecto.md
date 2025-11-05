@@ -2,6 +2,25 @@
 
 ## Avance del Proyecto
 
+### Próximos Pasos: Funcionalidades a Desarrollar
+
+Tras un análisis detallado del backend y la base de datos, se ha definido la siguiente hoja de ruta para las próximas implementaciones, ordenada por prioridad:
+
+1.  **CRUD para Formatos de Producto y Procesos:**
+    *   Crear endpoints dedicados para la gestión completa (crear, leer, actualizar, eliminar) de `Formatos_Producto` y `Procesos` (recetas), permitiendo a la administración configurar el sistema sin acceder a la base de datos.
+
+2.  **Gestión de Caja:**
+    *   Implementar la lógica para la apertura y cierre de caja, y el registro de movimientos de efectivo.
+
+3.  **Gestión de Horarios de Trabajadores:**
+    *   Desarrollar los endpoints para registrar y consultar las horas de entrada y salida de los trabajadores.
+
+4.  **Historial de Precios Automático:**
+    *   Implementar la lógica que guarde automáticamente los cambios de precio en la tabla `Historial_Precios`.
+
+5.  **Gestión de Transferencias Bancarias:**
+    *   Crear los endpoints para registrar y consultar transferencias entre cuentas bancarias de la empresa.
+
 ### miércoles, 5 de noviembre de 2025
 
 - **Descripción:**

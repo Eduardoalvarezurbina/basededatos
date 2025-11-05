@@ -68,6 +68,30 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
     *   **ESTADO:** PENDIENTE.
     *   **CONTEXTO:** Se debe implementar la lógica para mostrar/ocultar vistas según el rol del usuario.
 
+### **Fase 4: Completitud de Módulos de Administración y Finanzas (Próximos Pasos)**
+
+**ESTADO: PENDIENTE**
+
+*   **Paso 4.1: CRUD de Formatos de Producto y Procesos:**
+    *   **Prioridad:** Alta.
+    *   **Objetivo:** Crear APIs para gestionar `Formatos_Producto` y `Procesos` (recetas), permitiendo a los administradores configurar el catálogo de productos y las operaciones de producción desde el frontend.
+
+*   **Paso 4.2: Gestión de Caja:**
+    *   **Prioridad:** Media.
+    *   **Objetivo:** Implementar la lógica de apertura, cierre y registro de movimientos de caja para el control de efectivo.
+
+*   **Paso 4.3: Gestión de Horarios:**
+    *   **Prioridad:** Media.
+    *   **Objetivo:** Desarrollar la API para registrar y consultar las horas de entrada y salida de los trabajadores.
+
+*   **Paso 4.4: Historial de Precios Automático:**
+    *   **Prioridad:** Baja.
+    *   **Objetivo:** Automatizar el registro de cambios de precios en el historial cada vez que se actualice un producto.
+
+*   **Paso 4.5: Gestión de Transferencias Bancarias:**
+    *   **Prioridad:** Baja.
+    *   **Objetivo:** Crear los endpoints para registrar y consultar transferencias entre cuentas bancarias.
+
 ---
 
 ## 3. Historial de Cambios Detallado
