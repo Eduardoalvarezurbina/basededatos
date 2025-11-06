@@ -1,5 +1,1 @@
--- Migración DML: Insertar nuevas ciudades
-
-INSERT INTO Ciudades (nombre_ciudad) VALUES
-('San Carlos'),
-('Concepción');
+-- This file is empty to avoid duplicate key error.

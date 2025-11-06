@@ -13,7 +13,9 @@ INSERT INTO Ciudades (nombre_ciudad) VALUES
 ('Linares'),
 ('Talca'),
 ('Puerto Montt'),
-('Chiloé');
+('Chiloé'),
+('San Carlos'),
+('Concepción');
 
 -- Insertar Tipos de Pago
 INSERT INTO Tipos_Pago (nombre_tipo_pago) VALUES

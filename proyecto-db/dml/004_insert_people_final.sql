@@ -1,8 +1,5 @@
 -- Migración DML: Insertar Trabajadores, Proveedores y Clientes (versión final mejorada)
 
--- Limpiamos las tablas antes de insertar para una carga limpia
-TRUNCATE TABLE Trabajadores, Proveedores, Clientes RESTART IDENTITY CASCADE;
-
 -- Paso 1: Insertar Trabajadores
 INSERT INTO Trabajadores (nombre) VALUES
     ('Trinidad Muñoz'),
@@ -15,6 +12,8 @@ INSERT INTO Proveedores (nombre) VALUES
 
 -- Paso 3: Insertar Clientes (limpios y deduplicados por teléfono)
 INSERT INTO Clientes (nombre, telefono) VALUES
+    ('Ana', '56984917157'),
+    ('Gina', '56934073241'),
     ('Florencia', '56981376087'),
     ('Alejandra González', '56994191504'),
     ('Amiga', '56940795456'),

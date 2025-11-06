@@ -21,6 +21,15 @@ Tras un análisis detallado del backend y la base de datos, se ha definido la si
 5.  **Gestión de Transferencias Bancarias:**
     *   Crear los endpoints para registrar y consultar transferencias entre cuentas bancarias de la empresa.
 
+### jueves, 6 de noviembre de 2025
+
+### jueves, 6 de noviembre de 2025
+
+- **Descripción:**
+  - Se generó y actualizó el archivo `api_documentation.md` en la raíz del proyecto, detallando los endpoints RESTful del backend.
+  - Se modificó el endpoint `/login` para que devuelva el `id_usuario` y el `role` del usuario, facilitando la gestión de sesiones en el frontend.
+  - Se documentaron los endpoints de listas necesarios para los formularios (Formatos de Producto, Ubicaciones, Tipos de Pago, etc.) y se añadió el endpoint `GET /inventario/stock/:id_formato_producto/:id_ubicacion` para la consulta de stock.
+
 ### miércoles, 5 de noviembre de 2025
 
 - **Descripción:**

@@ -14,28 +14,40 @@ const pool = new Pool({
 
 // GET /procesos - Obtener todos los procesos con sus detalles
 router.get('/', verifyToken, async (req, res) => {
+  const { tipo } = req.query;
+
+  let query = `
+    SELECT 
+      p.id_proceso, p.nombre_proceso, p.tipo_proceso, p.observacion,
+      fp.formato as formato_producto_final,
+      prod.nombre as nombre_producto_final,
+      (SELECT json_agg(json_build_object(
+        'id_detalle_proceso', dp.id_detalle_proceso,
+        'id_formato_producto_ingrediente', dp.id_formato_producto_ingrediente,
+        'cantidad_requerida', dp.cantidad_requerida,
+        'nombre_ingrediente', p_ing.nombre,
+        'formato_ingrediente', fp_ing.formato
+      )) FROM Detalle_Procesos dp
+         JOIN Formatos_Producto fp_ing ON dp.id_formato_producto_ingrediente = fp_ing.id_formato_producto
+         JOIN Productos p_ing ON fp_ing.id_producto = p_ing.id_producto
+         WHERE dp.id_proceso = p.id_proceso
+      ) as ingredientes
+    FROM Procesos p
+    JOIN Formatos_Producto fp ON p.id_formato_producto_final = fp.id_formato_producto
+    JOIN Productos prod ON fp.id_producto = prod.id_producto
+  `;
+
+  const queryParams = [];
+
+  if (tipo) {
+    query += ' WHERE p.tipo_proceso = $1';
+    queryParams.push(tipo);
+  }
+
+  query += ' ORDER BY p.nombre_proceso';
+
   try {
-    const result = await pool.query(`
-      SELECT 
-        p.id_proceso, p.nombre_proceso, p.tipo_proceso, p.observacion,
-        fp.formato as formato_producto_final,
-        prod.nombre as nombre_producto_final,
-        (SELECT json_agg(json_build_object(
-          'id_detalle_proceso', dp.id_detalle_proceso,
-          'id_formato_producto_ingrediente', dp.id_formato_producto_ingrediente,
-          'cantidad_requerida', dp.cantidad_requerida,
-          'nombre_ingrediente', p_ing.nombre,
-          'formato_ingrediente', fp_ing.formato
-        )) FROM Detalle_Procesos dp
-           JOIN Formatos_Producto fp_ing ON dp.id_formato_producto_ingrediente = fp_ing.id_formato_producto
-           JOIN Productos p_ing ON fp_ing.id_producto = p_ing.id_producto
-           WHERE dp.id_proceso = p.id_proceso
-        ) as ingredientes
-      FROM Procesos p
-      JOIN Formatos_Producto fp ON p.id_formato_producto_final = fp.id_formato_producto
-      JOIN Productos prod ON fp.id_producto = prod.id_producto
-      ORDER BY p.nombre_proceso
-    `);
+    const result = await pool.query(query, queryParams);
     res.json(result.rows);
   } catch (err) {
     console.error('Error getting processes:', err);

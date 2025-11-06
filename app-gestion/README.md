@@ -242,3 +242,11 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
         *   `apiService.js` se actualizó para manejar la obtención de ventas (`getVentas`).
 
 (Y así sucesivamente con el resto de funcionalidades...)
+
+---
+
+## 4. Recursos Adicionales
+
+-   **Documentación de la API RESTful:** Consulta `api_documentation.md` en la raíz del proyecto para obtener detalles sobre los endpoints del backend, incluyendo métodos HTTP, URLs, roles autorizados y ejemplos de JSON para solicitudes y respuestas.
+
+---

@@ -77,7 +77,20 @@ module.exports = async () => {
       }
     }
 
+    const dmlPath = path.join(__dirname, '../../proyecto-db/dml');
+    const dmlFiles = fs.readdirSync(dmlPath).sort();
+
+    for (const file of dmlFiles) {
+      if (file.endsWith('.sql')) {
+        console.log(`Executing DML script: ${file}`);
+        const sql = fs.readFileSync(path.join(dmlPath, file), 'utf-8');
+        await pool.query(sql);
+        console.log(`Applied DML script: ${file}`);
+      }
+    }
+
     console.log('Test database schema created successfully.');
+
   } catch (error) {
     console.error('Error setting up test database:', error);
     process.exit(1);

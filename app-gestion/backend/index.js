@@ -31,6 +31,7 @@ const produccionRouter = require('./modules/produccion/produccion');
 const reclamosRouter = require('./modules/reclamos/reclamos');
 const formatosProductoRouter = require('./modules/formatosProducto/formatosProducto');
 const procesosRouter = require('./modules/procesos/procesos');
+const cajaRouter = require('./modules/caja/caja');
 const { verifyToken } = require('./routes/authMiddleware');
 
 const app = express();
@@ -67,10 +68,10 @@ app.post('/login', async (req, res) => {
 
   const token = jwt.sign({ id: user.id_usuario, role: user.role }, 'your_jwt_secret', { expiresIn: '1h' });
 
-  res.json({ message: 'Login successful', token });
+  res.json({ message: 'Login successful', token, role: user.role, id_usuario: user.id_usuario });
 });
 
-app.use(verifyToken);
+
 
 app.use('/products', productsRouter);
 app.use('/ubicaciones', ubicacionesRouter);
@@ -99,6 +100,7 @@ app.use('/produccion', produccionRouter);
 app.use('/reclamos', reclamosRouter);
 app.use('/formatos-producto', formatosProductoRouter);
 app.use('/procesos', procesosRouter);
+app.use('/caja', cajaRouter);
 
 
 

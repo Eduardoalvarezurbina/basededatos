@@ -1,0 +1,1 @@
+ALTER TABLE Caja ADD COLUMN hora TIME;
