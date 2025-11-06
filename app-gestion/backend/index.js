@@ -1,8 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 const { Pool } = require('pg');
-const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
+const { verifyToken } = require('./routes/authMiddleware');
 
 const productsRouter = require('./modules/products/products');
 const ubicacionesRouter = require('./modules/ubicaciones/ubicaciones');
@@ -32,20 +33,11 @@ const reclamosRouter = require('./modules/reclamos/reclamos');
 const formatosProductoRouter = require('./modules/formatosProducto/formatosProducto');
 const procesosRouter = require('./modules/procesos/procesos');
 const cajaRouter = require('./modules/caja/caja');
-const { verifyToken } = require('./routes/authMiddleware');
 
 const app = express();
 const port = 3001;
 
-// DB Connection
-// Lee la configuración de la base de datos desde variables de entorno para que sea compatible con Docker.
-const pool = new Pool({
-  user: process.env.DB_USER,
-  host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
-  password: process.env.DB_PASSWORD,
-  port: parseInt(process.env.DB_PORT || "5432"),
-});
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 
 app.use(cors());
 app.use(express.json());
@@ -53,7 +45,7 @@ app.use(express.json());
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  const result = await pool.query('SELECT * FROM Usuarios WHERE username = $1', [username]);
+  const result = await pool.query(`SELECT * FROM Usuarios WHERE username = $1`, [username]);
   const user = result.rows[0];
 
   if (!user) {
@@ -73,34 +65,37 @@ app.post('/login', async (req, res) => {
 
 
 
-app.use('/products', productsRouter);
-app.use('/ubicaciones', ubicacionesRouter);
-app.use('/tipos-cliente', tiposClienteRouter);
-app.use('/inventario', inventarioRouter);
-app.use('/ciudades', ciudadesRouter);
-app.use('/tipos-pago', tiposPagoRouter);
-app.use('/fuentes-contacto', fuentesContactoRouter);
-app.use('/puntos-venta', puntosVentaRouter);
-app.use('/trabajadores', trabajadoresRouter);
-app.use('/regiones', regionesRouter);
-app.use('/comunas', comunasRouter);
-app.use('/categorias-cliente', categoriasClienteRouter);
-app.use('/clasificaciones-cliente', clasificacionesClienteRouter);
-app.use('/frecuencias-compra', frecuenciasCompraRouter);
-app.use('/tipos-consumo', tiposConsumoRouter);
-app.use('/cuentas-bancarias', cuentasBancariasRouter);
-app.use('/clients', clientsRouter);
-app.use('/proveedores', proveedoresRouter);
+// app.use(verifyToken);
+
+app.use('/products', verifyToken, productsRouter);
+app.use('/ubicaciones', verifyToken, ubicacionesRouter);
+app.use('/tipos-cliente', verifyToken, tiposClienteRouter);
+app.use('/inventario', verifyToken, inventarioRouter);
+app.use('/ciudades', verifyToken, ciudadesRouter);
+app.use('/tipos-pago', verifyToken, tiposPagoRouter);
+app.use('/fuentes-contacto', verifyToken, fuentesContactoRouter);
+app.use('/puntos-venta', verifyToken, puntosVentaRouter);
+app.use('/trabajadores', verifyToken, trabajadoresRouter);
+app.use('/regiones', verifyToken, regionesRouter);
+app.use('/comunas', verifyToken, comunasRouter);
+app.use('/categorias-cliente', verifyToken, categoriasClienteRouter);
+app.use('/clasificaciones-cliente', verifyToken, clasificacionesClienteRouter);
+app.use('/frecuencias-compra', verifyToken, frecuenciasCompraRouter);
+app.use('/tipos-consumo', verifyToken, tiposConsumoRouter);
+app.use('/cuentas-bancarias', verifyToken, cuentasBancariasRouter);
+app.use('/clients', verifyToken, clientsRouter);
+app.use('/proveedores', verifyToken, proveedoresRouter);
+app.use('/compras', verifyToken, comprasRouter);
+app.use('/movimientos-inventario', verifyToken, movimientosInventarioRouter);
+app.use('/ventas', verifyToken, ventasRouter);
+app.use('/pedidos', verifyToken, pedidosRouter);
+app.use('/lotes', verifyToken, lotesRouter);
+app.use('/produccion', verifyToken, produccionRouter);
+app.use('/reclamos', verifyToken, reclamosRouter);
+app.use('/formatos-producto', verifyToken, formatosProductoRouter);
+app.use('/procesos', verifyToken, procesosRouter);
+app.use('/caja', verifyToken, cajaRouter);
 app.use('/compras', comprasRouter);
-app.use('/movimientos-inventario', movimientosInventarioRouter);
-app.use('/ventas', ventasRouter);
-app.use('/pedidos', pedidosRouter);
-app.use('/lotes', lotesRouter);
-app.use('/produccion', produccionRouter);
-app.use('/reclamos', reclamosRouter);
-app.use('/formatos-producto', formatosProductoRouter);
-app.use('/procesos', procesosRouter);
-app.use('/caja', cajaRouter);
 
 
 
