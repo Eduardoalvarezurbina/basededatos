@@ -1,51 +1,78 @@
 const express = require('express');
-const cors = require('cors');
+const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 const port = 3001;
 
-// DB Connection
-// Lee la configuración de la base de datos desde variables de entorno para que sea compatible con Docker.
+app.use(bodyParser.json());
+
+// Configuración de CORS para permitir solicitudes desde el frontend
+app.use((req, res, next) => {
+  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000'); // Reemplaza con la URL de tu frontend
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  next();
+});
+
 const pool = new Pool({
   user: process.env.DB_USER,
   host: process.env.DB_HOST,
-  database: process.env.DB_DATABASE,
+  database: 'business_data',
   password: process.env.DB_PASSWORD,
-  port: parseInt(process.env.DB_PORT || "5432"),
+  port: process.env.DB_PORT,
 });
 
-app.use(cors());
-app.use(express.json());
-
-app.get('/', (req, res) => {
-  res.send('Hello from the backend!');
+// Verificar y crear usuario 'admin' al iniciar el servidor
+pool.connect(async (err, client, done) => {
+  if (err) {
+    console.error('Error al conectar a la base de datos', err);
+    return;
+  }
+  try {
+    const res = await client.query('SELECT * FROM Usuarios WHERE username = $1', ['admin']);
+    if (res.rows.length === 0) {
+      // Si el usuario 'admin' no existe, crearlo
+      const hashedPassword = await bcrypt.hash('admin', 10); // Contraseña 'admin'
+      await client.query('INSERT INTO Usuarios (username, password_hash, role) VALUES ($1, $2, $3)', ['admin', hashedPassword, 'admin']);
+      console.log('Usuario admin creado con éxito.');
+    } else {
+      console.log('Usuario admin ya existe.');
+    }
+  } catch (error) {
+    console.error('Error al verificar/crear usuario admin:', error);
+  } finally {
+    done();
+  }
 });
 
+// Rutas de autenticación
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  try {
-    const result = await pool.query('SELECT * FROM Usuarios WHERE username = $1', [username]);
-    const user = result.rows[0];
+  const result = await pool.query(`SELECT * FROM Usuarios WHERE username = $1`, [username]);
+  const user = result.rows[0];
 
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    const passwordMatch = await bcrypt.compare(password, user.password_hash);
-
-    if (!passwordMatch) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
-
-    res.json({ message: 'Login successful', role: user.role });
-
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: 'Internal server error' });
+  if (!user) {
+    return res.status(401).json({ message: 'Invalid credentials' });
   }
+
+  const passwordMatch = await bcrypt.compare(password, user.password_hash);
+
+  if (!passwordMatch) {
+    return res.status(401).json({ message: 'Invalid credentials' });
+  }
+
+  const token = jwt.sign({ id: user.id_usuario, role: user.role }, 'your_jwt_secret', { expiresIn: '1h' });
+
+  res.json({ message: 'Login successful', token, role: user.role, id_usuario: user.id_usuario });
+});
+
+// Iniciar el servidor
+app.listen(port, () => {
+  console.log(`Backend server listening at http://localhost:${port}`);
 });
 
 
