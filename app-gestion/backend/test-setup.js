@@ -4,6 +4,9 @@ const fs = require('fs');
 const path = require('path');
 
 module.exports = async () => {
+  // Set JWT_SECRET for tests
+  process.env.JWT_SECRET = 'test_jwt_secret';
+
   const pool = new Pool({
     user: process.env.DB_USER,
     host: process.env.DB_HOST,
@@ -95,6 +98,7 @@ module.exports = async () => {
     console.error('Error setting up test database:', error);
     process.exit(1);
   } finally {
-    await pool.end();
+    // Do not end the pool here, as it needs to be available for the tests
+    // await pool.end();
   }
 };

@@ -129,6 +129,9 @@ const createProcessController = (pool) => {
     } catch (err) {
       await client.query('ROLLBACK');
       console.error('Error deleting process:', err);
+      if (err.code === '23503') { // Foreign key violation
+        return res.status(409).json({ message: 'Process is referenced by other records and cannot be deleted.' });
+      }
       if (err.message === 'Process not found') {
         return res.status(404).json({ message: 'Process not found' });
       }

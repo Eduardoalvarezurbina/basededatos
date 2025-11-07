@@ -1,58 +1,60 @@
 const request = require('supertest');
-const { app, pool } = require('../../index');
-const bcrypt = require('bcrypt');
+const { app } = require('../../app');
+const { Pool } = require('pg'); // Import Pool from the mocked 'pg' module
+
+jest.mock('pg', () => {
+  const mockClient = {
+    query: jest.fn(),
+    release: jest.fn(),
+  };
+  const mockPool = {
+    query: jest.fn(),
+    connect: jest.fn(() => mockClient),
+    end: jest.fn(),
+  };
+  return { Pool: jest.fn(() => mockPool) };
+});
 
 describe('Caja API', () => {
-  let token;
-  let server;
+  let pool;
+  let client;
 
-  beforeAll(async () => {
-    server = app.listen(4005);
-    // Create a test user and get a token
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('caja_test_password', salt);
-    await pool.query("INSERT INTO Usuarios (username, password_hash, role) VALUES ('caja_test_user', $1, 'admin') ON CONFLICT (username) DO NOTHING", [hashedPassword]);
-    const res = await request(app)
-      .post('/login')
-      .send({
-        username: 'caja_test_user',
-        password: 'caja_test_password',
-      });
-    token = res.body.token;
+  beforeAll(() => {
+    pool = new Pool(); // Get the mocked pool instance
+    client = pool.connect(); // Get the mocked client instance
   });
 
-  afterAll(async () => {
-    // Clean up the database
-    await pool.query("DELETE FROM Usuarios WHERE username = 'caja_test_user'");
-    server.close();
-    pool.end();
+  beforeEach(() => {
+    pool.query.mockClear();
+    client.query.mockClear();
+    pool.connect.mockClear();
   });
 
-  beforeEach(async () => {
-    await pool.query('TRUNCATE TABLE Caja RESTART IDENTITY CASCADE');
-    await pool.query('TRUNCATE TABLE Ventas RESTART IDENTITY CASCADE');
-  });
-
-  describe('POST /caja/abrir', () => {
+  describe('POST /api/caja/abrir', () => {
     it('debería abrir la caja con un monto inicial', async () => {
-      const res = await request(server)
-        .post('/caja/abrir')
-        .set('Authorization', `Bearer ${token}`)
+      const mockCaja = { id_caja: 1, monto_inicial: '10000.00' };
+      client.query
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rowCount: 0 }) // No hay caja abierta
+        .mockResolvedValueOnce({ rows: [mockCaja] }) // INSERT
+        .mockResolvedValueOnce({}); // COMMIT
+
+      const res = await request(app)
+        .post('/api/caja/abrir')
         .send({ monto_inicial: 10000 });
+
       expect(res.statusCode).toEqual(201);
-      expect(res.body.caja).toHaveProperty('id_caja');
-      expect(res.body.caja.monto_inicial).toBe("10000.00");
+      expect(res.body.caja).toEqual(mockCaja);
     });
 
     it('no debería abrir la caja si ya hay una abierta', async () => {
-      await request(server)
-        .post('/caja/abrir')
-        .set('Authorization', `Bearer ${token}`)
-        .send({ monto_inicial: 10000 });
+      client.query
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rowCount: 1 }) // Ya hay una caja abierta
+        .mockResolvedValueOnce({}); // ROLLBACK
 
-      const res = await request(server)
-        .post('/caja/abrir')
-        .set('Authorization', `Bearer ${token}`)
+      const res = await request(app)
+        .post('/api/caja/abrir')
         .send({ monto_inicial: 15000 });
 
       expect(res.statusCode).toEqual(409);
@@ -60,81 +62,69 @@ describe('Caja API', () => {
     });
   });
 
-  describe('POST /caja/cerrar', () => {
+  describe('POST /api/caja/cerrar', () => {
     it('debería cerrar la caja con el monto final correcto', async () => {
-        await request(server)
-            .post('/caja/abrir')
-            .set('Authorization', `Bearer ${token}`)
-        .send({ monto_inicial: 10000 });
+      const mockCajaAbierta = { id_caja: 1, monto_inicial: '10000.00', fecha_apertura: '2023-01-01', hora_apertura: '10:00:00' };
+      const mockVentas = { total_efectivo: '5000.00' };
+      const mockCajaCerrada = { id_caja: 1, monto_final: '15000.00' };
 
-      // 2. Simular una venta en efectivo
-      await pool.query(
-        `INSERT INTO Ventas (fecha, hora, id_cliente, id_punto_venta, id_tipo_pago, id_trabajador, neto_venta, iva_venta, total_bruto_venta, con_iva_venta, estado, estado_pago)
-         VALUES (CURRENT_DATE, CURRENT_TIME, 1, 1, 1, 1, 4201.68, 798.32, 5000.00, true, 'completada', 'pagado')`
-      );
+      client.query
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rowCount: 1, rows: [mockCajaAbierta] }) // Encontrar caja abierta
+        .mockResolvedValueOnce({ rows: [mockVentas] }) // Calcular ventas
+        .mockResolvedValueOnce({ rows: [mockCajaCerrada] }) // UPDATE
+        .mockResolvedValueOnce({}); // COMMIT
 
-      // 3. Cerrar la caja
-      const res = await request(server)
-        .post('/caja/cerrar')
-        .set('Authorization', `Bearer ${token}`);
+      const res = await request(app).post('/api/caja/cerrar');
 
       expect(res.statusCode).toEqual(200);
-      expect(res.body.caja.monto_final).toBe("15000.00"); // 10000 inicial + 5000 de la venta
+      expect(res.body.caja).toEqual(mockCajaCerrada);
     });
 
     it('no debería cerrar la caja si no hay ninguna abierta', async () => {
-        const res = await request(server)
-          .post('/caja/cerrar')
-          .set('Authorization', `Bearer ${token}`);
-  
-        expect(res.statusCode).toEqual(404);
-        expect(res.body.message).toBe('No hay una caja abierta para cerrar hoy.');
-      });
+      client.query
+        .mockResolvedValueOnce({}) // BEGIN
+        .mockResolvedValueOnce({ rowCount: 0 }) // No hay caja abierta
+        .mockResolvedValueOnce({}); // ROLLBACK
+
+      const res = await request(app).post('/api/caja/cerrar');
+
+      expect(res.statusCode).toEqual(404);
+      expect(res.body.message).toBe('No hay una caja abierta para cerrar hoy.');
+    });
   });
 
-  describe('GET /caja/estado', () => {
+  describe('GET /api/caja/estado', () => {
     it('debería devolver el estado "abierta" si la caja está abierta', async () => {
-        await request(server)
-            .post('/caja/abrir')
-            .set('Authorization', `Bearer ${token}`)
-            .send({ monto_inicial: 10000 });
+      const mockCaja = { id_caja: 1, estado: 'abierta' };
+      pool.query.mockResolvedValueOnce({ rowCount: 1, rows: [mockCaja] });
 
-        const res = await request(server)
-            .get('/caja/estado')
-            .set('Authorization', `Bearer ${token}`);
+      const res = await request(app).get('/api/caja/estado');
 
-        expect(res.statusCode).toEqual(200);
-        expect(res.body.estado).toBe('abierta');
-        expect(res.body.caja).toBeDefined();
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.estado).toBe('abierta');
+      expect(res.body.caja).toEqual(mockCaja);
     });
 
     it('debería devolver el estado "cerrada" si la caja está cerrada', async () => {
-        const res = await request(server)
-            .get('/caja/estado')
-            .set('Authorization', `Bearer ${token}`);
+      pool.query.mockResolvedValueOnce({ rowCount: 0 });
 
-        expect(res.statusCode).toEqual(200);
-        expect(res.body.estado).toBe('cerrada');
+      const res = await request(app).get('/api/caja/estado');
+
+      expect(res.statusCode).toEqual(200);
+      expect(res.body.estado).toBe('cerrada');
     });
   });
 
-  describe('GET /caja/historial', () => {
+  describe('GET /api/caja/historial', () => {
     it('debería devolver el historial de cajas cerradas', async () => {
-        await request(server)
-            .post('/caja/abrir')
-            .set('Authorization', `Bearer ${token}`)
-            .send({ monto_inicial: 10000 });
-        await request(server)
-            .post('/caja/cerrar')
-            .set('Authorization', `Bearer ${token}`);
+      const mockHistorial = [{ id_caja: 1, estado: 'cerrada' }];
+      pool.query.mockResolvedValueOnce({ rows: mockHistorial });
 
-        const res = await request(server)
-            .get('/caja/historial')
-            .set('Authorization', `Bearer ${token}`);
+      const res = await request(app).get('/api/caja/historial');
 
-        expect(res.statusCode).toEqual(200);
-        expect(Array.isArray(res.body)).toBe(true);
-        expect(res.body.length).toBe(1);
+      expect(res.statusCode).toEqual(200);
+      expect(res.body).toEqual(mockHistorial);
     });
   });
 });

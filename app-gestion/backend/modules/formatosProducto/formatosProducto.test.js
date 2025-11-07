@@ -1,20 +1,23 @@
 const request = require('supertest');
-const { app, pool } = require('../../index'); // Import the actual app and pool
+const { app, pool } = require('../../app');
 const bcrypt = require('bcrypt');
+const { v4: uuidv4 } = require('uuid');
 
 describe('Formatos_Producto API', () => {
   let token;
   let mockProduct;
   let mockFormat;
   let mockUbicacion;
+  const uniqueLocationName = `Test Location ${uuidv4()}`;
 
   beforeAll(async () => {
+    console.log('beforeAll hook in formatosProducto.test.js');
     // 1. Create a test user and get a token
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash('testpassword', salt);
     await pool.query("INSERT INTO Usuarios (username, password_hash, role) VALUES ('formato_test_user', $1, 'admin') ON CONFLICT (username) DO NOTHING", [hashedPassword]);
     const res = await request(app)
-      .post('/login')
+      .post('/api/auth/login') // Corrected path
       .send({
         username: 'formato_test_user',
         password: 'testpassword',
@@ -22,19 +25,20 @@ describe('Formatos_Producto API', () => {
     token = res.body.token;
 
     // 2. Create mock product and location
-    const productRes = await pool.query("INSERT INTO Productos (nombre, categoria, activo) VALUES ('Test Product for Formato', 'Test Category', true) RETURNING id_producto");
+    const productRes = await pool.query("INSERT INTO Productos (nombre, categoria, activo) VALUES ('Test Product for Formato', 'Test Category', true) ON CONFLICT (nombre) DO NOTHING RETURNING id_producto");
     mockProduct = productRes.rows[0];
-    const ubicacionRes = await pool.query("INSERT INTO Ubicaciones_Inventario (nombre, tipo) VALUES ('Test Location for Formato', 'Test') RETURNING id_ubicacion");
+    const ubicacionRes = await pool.query("INSERT INTO Ubicaciones_Inventario (nombre, tipo) VALUES ($1, 'Test') RETURNING id_ubicacion", [uniqueLocationName]);
     mockUbicacion = ubicacionRes.rows[0];
   });
 
   afterAll(async () => {
-    // Clean up all mock data
+    // Clean up all mock data in correct order to avoid foreign key violations
+    await pool.query('DELETE FROM Inventario WHERE id_formato_producto IN (SELECT id_formato_producto FROM Formatos_Producto WHERE id_producto = $1)', [mockProduct.id_producto]);
     await pool.query('DELETE FROM Formatos_Producto WHERE id_producto = $1', [mockProduct.id_producto]);
-    await pool.query('DELETE FROM Productos WHERE id_producto = $1', [mockProduct.id_producto]);
-    await pool.query('DELETE FROM Ubicaciones_Inventario WHERE id_ubicacion = $1', [mockUbicacion.id_ubicacion]);
+    await pool.query("DELETE FROM Productos WHERE nombre = 'Test Product for Formato'");
+    await pool.query("DELETE FROM Ubicaciones_Inventario WHERE nombre = $1", [uniqueLocationName]);
     await pool.query("DELETE FROM Usuarios WHERE username = 'formato_test_user'");
-    await pool.end();
+    // Do NOT call pool.end() here, it should be managed globally if needed
   });
 
   // Test POST
@@ -48,7 +52,7 @@ describe('Formatos_Producto API', () => {
       unidad_medida: 'kg'
     };
     const res = await request(app)
-      .post('/formatos-producto')
+      .post('/api/product-formats') // Corrected path
       .set('Authorization', `Bearer ${token}`)
       .send(newFormat);
 
@@ -59,7 +63,7 @@ describe('Formatos_Producto API', () => {
 
   // Test GET all
   it('should fetch all product formats', async () => {
-    const res = await request(app).get('/formatos-producto').set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get('/api/product-formats').set('Authorization', `Bearer ${token}`); // Corrected path
     expect(res.statusCode).toEqual(200);
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.length).toBeGreaterThan(0);
@@ -67,7 +71,7 @@ describe('Formatos_Producto API', () => {
 
   // Test GET by ID
   it('should fetch a single product format by ID', async () => {
-    const res = await request(app).get(`/formatos-producto/${mockFormat.id_formato_producto}`).set('Authorization', `Bearer ${token}`);
+    const res = await request(app).get(`/api/product-formats/${mockFormat.id_formato_producto}`).set('Authorization', `Bearer ${token}`); // Corrected path
     expect(res.statusCode).toEqual(200);
     expect(res.body.id_formato_producto).toEqual(mockFormat.id_formato_producto);
     expect(res.body.formato).toEqual('1kg');
@@ -81,7 +85,7 @@ describe('Formatos_Producto API', () => {
       precio_detalle_neto: 1100
     };
     const res = await request(app)
-      .put(`/formatos-producto/${mockFormat.id_formato_producto}`)
+      .put(`/api/product-formats/${mockFormat.id_formato_producto}`) // Corrected path
       .set('Authorization', `Bearer ${token}`)
       .send(updatedFormat);
 
@@ -92,12 +96,12 @@ describe('Formatos_Producto API', () => {
 
   // Test DELETE
   it('should delete a product format', async () => {
-    const res = await request(app).delete(`/formatos-producto/${mockFormat.id_formato_producto}`).set('Authorization', `Bearer ${token}`);
+    const res = await request(app).delete(`/api/product-formats/${mockFormat.id_formato_producto}`).set('Authorization', `Bearer ${token}`); // Corrected path
     expect(res.statusCode).toEqual(200);
     expect(res.body.message).toContain('deleted successfully');
 
     // Verify it's gone
-    const getRes = await request(app).get(`/formatos-producto/${mockFormat.id_formato_producto}`).set('Authorization', `Bearer ${token}`);
+    const getRes = await request(app).get(`/api/product-formats/${mockFormat.id_formato_producto}`).set('Authorization', `Bearer ${token}`); // Corrected path
     expect(getRes.statusCode).toEqual(404);
   });
 
@@ -119,7 +123,7 @@ describe('Formatos_Producto API', () => {
     await pool.query('INSERT INTO Inventario (id_formato_producto, id_ubicacion, stock_actual) VALUES ($1, $2, 10)', [formatInUse.id_formato_producto, mockUbicacion.id_ubicacion]);
 
     // 3. Attempt to delete it
-    const res = await request(app).delete(`/formatos-producto/${formatInUse.id_formato_producto}`).set('Authorization', `Bearer ${token}`);
+    const res = await request(app).delete(`/api/product-formats/${formatInUse.id_formato_producto}`).set('Authorization', `Bearer ${token}`); // Corrected path
     expect(res.statusCode).toEqual(409);
     expect(res.body.message).toContain('referenced by other records');
 
