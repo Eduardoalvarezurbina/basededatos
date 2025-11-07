@@ -4,6 +4,7 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const createProductRoutes = require('./routes/products');
+const createAuthRoutes = require('./routes/auth');
 
 const app = express();
 
@@ -22,6 +23,7 @@ const pool = new Pool({
 
 // --- Rutas de la API ---
 app.use('/api/products', createProductRoutes(pool));
+app.use('/api/auth', createAuthRoutes(pool));
 
 // TODO: Migrar las rutas restantes de index.js (login, ventas, etc.)
 
