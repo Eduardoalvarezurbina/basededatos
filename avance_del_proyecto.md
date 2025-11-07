@@ -29,8 +29,6 @@
   - Se corrigió el proceso de autenticación del backend y se actualizó el hash de la contraseña del usuario 'admin' en el script de inserción de datos.
   - Se resolvieron problemas de configuración de Docker Compose para el backend, incluyendo la correcta gestión de `node_modules`, la importación de `bcrypt` y la conexión a la base de datos.
   - Se reinicializó la base de datos para asegurar la aplicación correcta de los scripts DML, incluyendo el hash actualizado del usuario 'admin'.
-  - Se reinicializó la base de datos para asegurar la aplicación correcta de los scripts DML, incluyendo el hash actualizado del usuario 'admin'.
-  - Se resolvieron problemas de configuración de Docker Compose para el backend, incluyendo la correcta gestión de `node_modules`, la importación de `bcrypt` y la conexión a la base de datos.
 - [x] Implementación del módulo de gestión de caja (CRUD).
 - [ ] Implementación del módulo de gestión de compras (CRUD).
 - [ ] Implementación del módulo de gestión de producción (CRUD).
