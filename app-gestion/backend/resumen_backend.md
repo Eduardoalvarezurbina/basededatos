@@ -88,3 +88,16 @@ El backend es el **cerebro y el intermediario** del sistema. No almacena datos, 
     - CRUD completo para `/cuentas-bancarias`.
     - CRUD completo para `/clients`.
     - CRUD completo para `/proveedores`.
+
+---
+
+## Troubleshooting y Notas de Desarrollo
+
+### Corrección de Error de Arranque (07/11/2025)
+- **Problema:** El servidor backend entraba en un bucle de reinicios debido a un `SyntaxError: Unexpected end of input` en `index.js`. Esto se manifestaba como un "Network Error" en el frontend.
+- **Causa:** Múltiples ediciones sobre el archivo monolítico `index.js` (que quedó como única fuente de código tras un `git clean`) resultaron en un error de sintaxis.
+- **Solución:**
+    1. Se corrigió la sintaxis del archivo `index.js`.
+    2. Se estandarizó el uso de la librería `cors` en lugar de una implementación manual.
+    3. Se estableció que, para asegurar la carga de cambios, es más fiable usar `docker-compose down && docker-compose up -d` que un simple `restart`.
+- **Estado:** El servidor ahora es estable.

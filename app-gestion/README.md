@@ -250,3 +250,13 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
 -   **Documentación de la API RESTful:** Consulta `api_documentation.md` en la raíz del proyecto para obtener detalles sobre los endpoints del backend, incluyendo métodos HTTP, URLs, roles autorizados y ejemplos de JSON para solicitudes y respuestas.
 
 ---
+
+## 5. Notas de Desarrollo y Troubleshooting
+
+### Solución de "Network Error" (07/11/2025)
+- **Síntoma:** El frontend mostraba un "Network Error" al intentar comunicarse con el backend.
+- **Causa Raíz:** El servidor de backend (`index.js`) no arrancaba debido a un error de sintaxis introducido durante correcciones previas. El problema se vio agravado porque el reinicio del contenedor con `docker-compose restart` no siempre cargaba la nueva versión del archivo de forma fiable.
+- **Solución:**
+    1. Se corrigió el error de sintaxis en `app-gestion/backend/index.js`.
+    2. Se estableció como práctica recomendada el uso de `docker-compose down` seguido de `docker-compose up -d` para forzar una reconstrucción completa del contenedor y garantizar que se utilice la última versión del código.
+    3. Se reemplazó la configuración manual de CORS por la librería `cors` para mayor robustez.

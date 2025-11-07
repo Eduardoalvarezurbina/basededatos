@@ -3,19 +3,13 @@ const bodyParser = require('body-parser');
 const { Pool } = require('pg');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const cors = require('cors');
 
 const app = express();
 const port = 3001;
 
 app.use(bodyParser.json());
-
-// Configuración de CORS para permitir solicitudes desde el frontend
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000'); // Reemplaza con la URL de tu frontend
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  next();
-});
+app.use(cors()); // Usar el middleware de CORS
 
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -1234,7 +1228,7 @@ app.post('/clients', async (req, res) => {
   const { nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, id_cuenta_preferida, rut, email, fecha_ultima_compra, correo, id_tipo_cliente, id_comuna, fecha_inicio_cliente, id_canal_compra, id_frecuencia_compra, gasto_promedio_por_compra, ticket_promedio_total, preferencia_mix_berries, preferencia_pulpas, id_tipo_consumo, preferencia_envase, intereses_promociones, preferencia_alimentaria, epoca_compra_preferida, recibio_seguimiento_postventa, participo_promociones, tiene_deudas_pendientes, suscrito_newsletter, dejo_resenas, nivel_satisfaccion, segmento_vip, coordenadas_geograficas, fecha_cumpleanos, id_clasificacion_cliente, etiquetas_comportamiento } = req.body;
   try {
     const result = await pool.query(
-      'INSERT INTO Clientes (nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, id_cuenta_preferida, rut, email, fecha_ultima_compra, correo, id_tipo_cliente, id_comuna, fecha_inicio_cliente, id_canal_compra, id_frecuencia_compra, gasto_promedio_por_compra, ticket_promedio_total, preferencia_mix_berries, preferencia_pulpas, id_tipo_consumo, preferencia_envase, intereses_promociones, preferencia_alimentaria, epoca_compra_preferida, recibio_seguimiento_postventa, participo_promociones, tiene_deudas_pendientes, suscrito_newsletter, dejo_resenas, nivel_satisfaccion, segmento_vip, coordenadas_geograficas, fecha_cumpleanos, id_clasificacion_cliente, etiquetas_comportamiento) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36) RETURNING *'
+      'INSERT INTO Clientes (nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, id_cuenta_preferida, rut, email, fecha_ultima_compra, correo, id_tipo_cliente, id_comuna, fecha_inicio_cliente, id_canal_compra, id_frecuencia_compra, gasto_promedio_por_compra, ticket_promedio_total, preferencia_mix_berries, preferencia_pulpas, id_tipo_consumo, preferencia_envase, intereses_promociones, preferencia_alimentaria, epoca_compra_preferida, recibio_seguimiento_postventa, participo_promociones, tiene_deudas_pendientes, suscrito_newsletter, dejo_resenas, nivel_satisfaccion, segmento_vip, coordenadas_geograficas, fecha_cumpleanos, id_clasificacion_cliente, etiquetas_comportamiento) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36) RETURNING *',
       [nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, id_cuenta_preferida, rut, email, fecha_ultima_compra, correo, id_tipo_cliente, id_comuna, fecha_inicio_cliente, id_canal_compra, id_frecuencia_compra, gasto_promedio_por_compra, ticket_promedio_total, preferencia_mix_berries, preferencia_pulpas, id_tipo_consumo, preferencia_envase, intereses_promociones, preferencia_alimentaria, epoca_compra_preferida, recibio_seguimiento_postventa, participo_promociones, tiene_deudas_pendientes, suscrito_newsletter, dejo_resenas, nivel_satisfaccion, segmento_vip, coordenadas_geograficas, fecha_cumpleanos, id_clasificacion_cliente, etiquetas_comportamiento]
     );
     res.status(201).json(result.rows[0]);
@@ -1249,7 +1243,7 @@ app.put('/clients/:id', async (req, res) => {
   const { nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, id_cuenta_preferida, rut, email, fecha_ultima_compra, correo, id_tipo_cliente, id_comuna, fecha_inicio_cliente, id_canal_compra, id_frecuencia_compra, gasto_promedio_por_compra, ticket_promedio_total, preferencia_mix_berries, preferencia_pulpas, id_tipo_consumo, preferencia_envase, intereses_promociones, preferencia_alimentaria, epoca_compra_preferida, recibio_seguimiento_postventa, participo_promociones, tiene_deudas_pendientes, suscrito_newsletter, dejo_resenas, nivel_satisfaccion, segmento_vip, coordenadas_geograficas, fecha_cumpleanos, id_clasificacion_cliente, etiquetas_comportamiento } = req.body;
   try {
     const result = await pool.query(
-      'UPDATE Clientes SET nombre = $1, telefono = $2, id_ciudad = $3, direccion = $4, id_categoria_cliente = $5, id_fuente_contacto = $6, id_cuenta_preferida = $7, rut = $8, email = $9, fecha_ultima_compra = $10, correo = $11, id_tipo_cliente = $12, id_comuna = $13, fecha_inicio_cliente = $14, id_canal_compra = $15, id_frecuencia_compra = $16, gasto_promedio_por_compra = $17, ticket_promedio_total = $18, preferencia_mix_berries = $19, preferencia_pulpas = $20, id_tipo_consumo = $21, preferencia_envase = $22, intereses_promociones = $23, preferencia_alimentaria = $24, epoca_compra_preferida = $25, recibio_seguimiento_postventa = $26, participo_promociones = $27, tiene_deudas_pendientes = $28, suscrito_newsletter = $29, dejo_resenas = $30, nivel_satisfaccion = $31, segmento_vip = $32, coordenadas_geograficas = $33, fecha_cumpleanos = $34, id_clasificacion_cliente = $35, etiquetas_comportamiento = $36 WHERE id_cliente = $37 RETURNING *'
+      'UPDATE Clientes SET nombre = $1, telefono = $2, id_ciudad = $3, direccion = $4, id_categoria_cliente = $5, id_fuente_contacto = $6, id_cuenta_preferida = $7, rut = $8, email = $9, fecha_ultima_compra = $10, correo = $11, id_tipo_cliente = $12, id_comuna = $13, fecha_inicio_cliente = $14, id_canal_compra = $15, id_frecuencia_compra = $16, gasto_promedio_por_compra = $17, ticket_promedio_total = $18, preferencia_mix_berries = $19, preferencia_pulpas = $20, id_tipo_consumo = $21, preferencia_envase = $22, intereses_promociones = $23, preferencia_alimentaria = $24, epoca_compra_preferida = $25, recibio_seguimiento_postventa = $26, participo_promociones = $27, tiene_deudas_pendientes = $28, suscrito_newsletter = $29, dejo_resenas = $30, nivel_satisfaccion = $31, segmento_vip = $32, coordenadas_geograficas = $33, fecha_cumpleanos = $34, id_clasificacion_cliente = $35, etiquetas_comportamiento = $36 WHERE id_cliente = $37 RETURNING *',
       [nombre, telefono, id_ciudad, direccion, id_categoria_cliente, id_fuente_contacto, id_cuenta_preferida, rut, email, fecha_ultima_compra, correo, id_tipo_cliente, id_comuna, fecha_inicio_cliente, id_canal_compra, id_frecuencia_compra, gasto_promedio_por_compra, ticket_promedio_total, preferencia_mix_berries, preferencia_pulpas, id_tipo_consumo, preferencia_envase, intereses_promociones, preferencia_alimentaria, epoca_compra_preferida, recibio_seguimiento_postventa, participo_promociones, tiene_deudas_pendientes, suscrito_newsletter, dejo_resenas, nivel_satisfaccion, segmento_vip, coordenadas_geograficas, fecha_cumpleanos, id_clasificacion_cliente, etiquetas_comportamiento, id]
     );
     if (result.rowCount === 0) {
@@ -1303,8 +1297,4 @@ app.post('/proveedores', async (req, res) => {
     console.error('Error creating supplier:', err);
     res.status(500).json({ message: 'Internal server error', error: err.message });
   }
-});
-
-app.listen(port, () => {
-  console.log(`Backend server listening at http://localhost:${port}`);
 });

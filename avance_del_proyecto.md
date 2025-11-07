@@ -15,6 +15,22 @@
 - **Estado:** El frontend es ahora funcional y consistente con la documentación de la API. Se ha creado un `README.md` detallado en la carpeta del frontend.
 
 ---
+## Depuración Crítica del Backend
+
+**Fecha:** 7 de Noviembre de 2025
+
+**Resumen:** Se solucionó un "Network Error" persistente que impedía la comunicación entre el frontend y el backend.
+
+**Análisis y Solución:**
+- **Problema Inicial:** El backend no arrancaba debido a un error de sintaxis (`SyntaxError: Unexpected end of input`) en el archivo principal `index.js`.
+- **Causa Raíz:** El error fue introducido accidentalmente durante una serie de correcciones previas. La situación se complicó porque los archivos de rutas modulares (`/routes`) habían sido eliminados por un comando `git clean`, dejando el `index.js` monolítico como única fuente de código.
+- **Resolución:**
+    1. Se corrigió la implementación de CORS en `index.js`, reemplazando una configuración manual por el uso de la librería estándar `cors`.
+    2. Se identificó y reparó el error de sintaxis que impedía el arranque del servidor.
+    3. Se determinó que `docker-compose restart` no era suficiente para aplicar los cambios de manera fiable. Se estableció como procedimiento de troubleshooting el uso de `docker-compose down` y `docker-compose up -d` para forzar una reconstrucción limpia de los contenedores y asegurar la carga del código corregido.
+- **Estado:** El backend ahora es estable, arranca sin errores y la comunicación con el frontend está completamente restaurada.
+
+---
 
 ## Hito 1: Configuración Inicial y Base de Datos
 
