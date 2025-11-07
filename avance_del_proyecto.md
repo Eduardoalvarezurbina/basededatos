@@ -26,10 +26,8 @@
 ## Hito 2: Backend - Módulos CRUD
 
 - [x] Implementación del módulo de autenticación de usuarios.
-  - Se corrigió el proceso de autenticación del backend y se actualizó el hash de la contraseña del usuario 'admin' en el script de inserción de datos.
-  - Se resolvieron problemas de configuración de Docker Compose para el backend, incluyendo la correcta gestión de `node_modules`, la importación de `bcrypt` y la conexión a la base de datos.
-  - Se reinicializó la base de datos para asegurar la aplicación correcta de los scripts DML, incluyendo el hash actualizado del usuario 'admin'.
-- [x] Implementación del módulo de gestión de caja (CRUD).
+  - **Solución definitiva para el usuario 'admin':** Se modificó el `index.js` del backend para que, al iniciar, verifique la existencia del usuario 'admin'. Si no existe, lo crea automáticamente con la contraseña 'admin' (generando el hash con `bcrypt` internamente) y el rol 'admin'. Esto asegura que el hash siempre sea compatible con la lógica de autenticación del backend y elimina problemas de sincronización de hashes en la base de datos.
+  - Se eliminó el script `006_insert_admin_user.sql` ya que su funcionalidad fue absorbida por el backend.
 - [ ] Implementación del módulo de gestión de compras (CRUD).
 - [ ] Implementación del módulo de gestión de producción (CRUD).
 - [ ] Implementación del módulo de gestión de lotes (CRUD).
