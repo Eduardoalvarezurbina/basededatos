@@ -1,192 +1,287 @@
 const request = require('supertest');
-const { app, pool } = require('../../index'); // Import the app and pool
-const bcrypt = require('bcrypt');
 
-describe('Ventas API', () => {
-  let token;
-  let adminToken;
-  let workerToken;
+// --- Mock de la Base de Datos ---
+const mockClient = {
+  query: jest.fn(),
+  release: jest.fn(),
+};
+const mockPool = {
+  query: jest.fn(),
+  connect: jest.fn(() => mockClient),
+  end: jest.fn(),
+};
+jest.mock('pg', () => {
+  return { Pool: jest.fn(() => mockPool) };
+});
 
-  let newSale = {
-    id_cliente: 1,
-    id_punto_venta: 1,
-    id_tipo_pago: 1,
-    id_trabajador: 1,
-    neto_venta: 1000,
-    iva_venta: 190,
-    total_bruto_venta: 1190,
-    con_iva_venta: true,
-    observacion: 'Test sale 1',
-    estado: 'Completada',
-    estado_pago: 'Pagado',
-    con_factura: true,
-    detalles: [
-      {
-        id_formato_producto: 1,
-        cantidad: 1,
-        precio_unitario: 1000,
-        id_lote: 1,
-        id_ubicacion: 1
-      }
-    ]
-  };
+// --- Importar la App ---
+const { app } = require('../../app');
 
-  beforeAll(async () => {
-    // Create a test admin user and get a token
-    const salt = await bcrypt.genSalt(10);
-    const hashedPasswordAdmin = await bcrypt.hash('adminpassword', salt);
-    await pool.query("INSERT INTO Usuarios (username, password_hash, role) VALUES ('testadmin', $1, 'admin') ON CONFLICT (username) DO NOTHING", [hashedPasswordAdmin]);
-    const resAdmin = await request(app)
-      .post('/login')
-      .send({
-        username: 'testadmin',
-        password: 'adminpassword',
-      });
-    adminToken = resAdmin.body.token;
+describe('Módulo de Ventas (Transacciones)', () => {
 
-    // Create a test worker user and get a token
-    const hashedPasswordWorker = await bcrypt.hash('workerpassword', salt);
-    await pool.query("INSERT INTO Usuarios (username, password_hash, role) VALUES ('testworker', $1, 'trabajador') ON CONFLICT (username) DO NOTHING", [hashedPasswordWorker]);
-    const resWorker = await request(app)
-      .post('/login')
-      .send({
-        username: 'testworker',
-        password: 'workerpassword',
-      });
-    workerToken = resWorker.body.token;
-
-    token = adminToken; // Default token for tests
+  beforeEach(() => {
+    mockPool.query.mockClear();
+    mockClient.query.mockClear();
+    mockPool.connect.mockClear();
   });
 
-  afterAll(async () => {
-    // Clean up the database
-    await pool.query("DELETE FROM Usuarios WHERE username = 'testadmin'");
-    await pool.query("DELETE FROM Usuarios WHERE username = 'testworker'");
-    pool.end();
+  it('GET /api/ventas debería devolver una lista de ventas con estado 200', async () => {
+    const mockVentas = [
+      { id_transaccion: 1, fecha_transaccion: '2023-01-01', total_neto: 100, detalles: [] },
+      { id_transaccion: 2, fecha_transaccion: '2023-01-02', total_neto: 200, detalles: [] },
+    ];
+    mockPool.query.mockResolvedValueOnce({ rows: mockVentas });
+
+    const response = await request(app).get('/api/ventas');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual(mockVentas);
+    expect(mockPool.query).toHaveBeenCalled();
   });
 
-  beforeEach(async () => {
-    // Insert test data
-    await pool.query("INSERT INTO Clientes (id_cliente, nombre, telefono, email) VALUES (1, 'Test Client', '123456789', 'client@test.com') ON CONFLICT (id_cliente) DO UPDATE SET nombre = EXCLUDED.nombre;");
-    await pool.query("INSERT INTO Puntos_Venta (id_punto_venta, nombre, direccion) VALUES (1, 'Test Point of Sale', 'Test Address') ON CONFLICT (id_punto_venta) DO UPDATE SET nombre = EXCLUDED.nombre;");
-    await pool.query("INSERT INTO Tipos_Pago (id_tipo_pago, nombre_tipo_pago) VALUES (1, 'Test Payment Type') ON CONFLICT (id_tipo_pago) DO UPDATE SET nombre_tipo_pago = EXCLUDED.nombre_tipo_pago;");
-    await pool.query("INSERT INTO Trabajadores (id_trabajador, nombre) VALUES (1, 'Test Worker') ON CONFLICT (id_trabajador) DO UPDATE SET nombre = EXCLUDED.nombre;");
-    await pool.query("INSERT INTO Productos (id_producto, nombre) VALUES (1, 'Test Product') ON CONFLICT (id_producto) DO UPDATE SET nombre = EXCLUDED.nombre;");
-    await pool.query("INSERT INTO Formatos_Producto (id_formato_producto, id_producto, formato, unidad_medida) VALUES (1, 1, '1kg', 'kg') ON CONFLICT (id_formato_producto) DO UPDATE SET formato = EXCLUDED.formato;");
-    await pool.query("INSERT INTO Lotes_Produccion (id_lote, codigo_lote, id_producto, fecha_produccion, fecha_vencimiento, costo_por_unidad, cantidad_inicial) VALUES (1, 'LOTETEST001', 1, '2025-01-01', '2025-12-31', 100, 100) ON CONFLICT (id_lote) DO UPDATE SET codigo_lote = EXCLUDED.codigo_lote;");
-    await pool.query("INSERT INTO Ubicaciones_Inventario (id_ubicacion, nombre) VALUES (1, 'Test Location') ON CONFLICT (id_ubicacion) DO UPDATE SET nombre = EXCLUDED.nombre;");
-    await pool.query("INSERT INTO Inventario (id_formato_producto, id_ubicacion, stock_actual) VALUES (1, 1, 100) ON CONFLICT (id_formato_producto, id_ubicacion) DO UPDATE SET stock_actual = EXCLUDED.stock_actual;");
+  it('GET /api/ventas/:id debería devolver una venta específica con estado 200', async () => {
+    const mockVenta = { id_transaccion: 1, fecha_transaccion: '2023-01-01', total_neto: 100, detalles: [] };
+    mockPool.query.mockResolvedValueOnce({ rowCount: 1, rows: [mockVenta] });
+
+    const response = await request(app).get('/api/ventas/1');
+
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual(mockVenta);
+    expect(mockPool.query).toHaveBeenCalled();
   });
 
-  afterEach(async () => {
-    // Clean up test data
-    await pool.query("DELETE FROM Detalle_Ventas WHERE id_venta IN (SELECT id_venta FROM Ventas WHERE observacion = 'Test sale 1')");
-    await pool.query("DELETE FROM Ventas WHERE observacion = 'Test sale 1'");
+  it('GET /api/ventas/:id debería devolver 404 si la venta no existe', async () => {
+    mockPool.query.mockResolvedValueOnce({ rowCount: 0 });
+
+    const response = await request(app).get('/api/ventas/999');
+
+    expect(response.statusCode).toBe(404);
+    expect(response.body.message).toBe('Sale not found');
   });
 
-  describe('GET /ventas', () => {
-    it('should return an empty array if no sales exist', async () => {
-      await pool.query('DELETE FROM Detalle_Ventas');
-      await pool.query('DELETE FROM Ventas');
-      const res = await request(app)
-        .get('/ventas')
-        .set('Authorization', `Bearer ${token}`);
-      expect(res.statusCode).toEqual(200);
-      expect(res.body).toEqual([]);
-    });
+  it('POST /api/ventas debería crear una nueva venta y actualizar inventario con estado 201', async () => {
+    const newVentaData = {
+      fecha_transaccion: '2023-01-03',
+      id_cliente: 1,
+      id_punto_venta: 1,
+      id_tipo_pago: 1,
+      factura: 'F-001',
+      observaciones: 'Venta de prueba',
+      detalles: [
+        { id_formato_producto: 1, cantidad: 10, precio_neto_unitario: 50, id_lote: 1 },
+        { id_formato_producto: 2, cantidad: 5, precio_neto_unitario: 100, id_lote: 2 },
+      ]
+    };
+    const createdVenta = { id_transaccion: 3, ...newVentaData, total_neto: 1000, total_iva: 190, total_bruto: 1190 };
 
-    it('should return all sales', async () => {
-      await request(app)
-        .post('/ventas')
-        .set('Authorization', `Bearer ${token}`)
-        .send(newSale);
+    mockClient.query
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rows: [{ id_transaccion: 3 }] }) // INSERT Transacciones
+      .mockResolvedValueOnce({}) // INSERT Detalle_Transacciones 1
+      .mockResolvedValueOnce({}) // UPDATE Inventario 1
+      .mockResolvedValueOnce({}) // INSERT Detalle_Transacciones 2
+      .mockResolvedValueOnce({}) // UPDATE Inventario 2
+      .mockResolvedValueOnce({}); // COMMIT
 
-      const res = await request(app)
-        .get('/ventas')
-        .set('Authorization', `Bearer ${token}`);
+    const response = await request(app).post('/api/ventas').send(newVentaData);
 
-      expect(res.statusCode).toEqual(200);
-      expect(res.body).toBeInstanceOf(Array);
-      expect(res.body.length).toBeGreaterThanOrEqual(1);
-      expect(res.body[0]).toHaveProperty('id_venta');
-      expect(res.body[0]).toHaveProperty('nombre_cliente');
-    });
+    expect(response.statusCode).toBe(201);
+    expect(response.body).toEqual({ message: 'Sale created and inventory updated successfully', id_transaccion: 3 });
+    expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
+    expect(mockClient.query).toHaveBeenCalledWith(
+      'INSERT INTO Transacciones (fecha_transaccion, id_cliente, id_punto_venta, id_tipo_pago, total_neto, total_iva, total_bruto, factura, observaciones) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING id_transaccion',
+      [newVentaData.fecha_transaccion, newVentaData.id_cliente, newVentaData.id_punto_venta, newVentaData.id_tipo_pago, 1000, 190, 1190, newVentaData.factura, newVentaData.observaciones]
+    );
+    expect(mockClient.query).toHaveBeenCalledWith(
+      'INSERT INTO Detalle_Transacciones (id_transaccion, id_formato_producto, cantidad, precio_neto_unitario, iva_unitario, precio_bruto_unitario, subtotal_neto, subtotal_iva, subtotal_bruto, id_lote) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+      [3, 1, 10, 50, 9.5, 59.5, 500, 95, 595, 1]
+    );
+    expect(mockClient.query).toHaveBeenCalledWith(
+      'UPDATE Inventario SET cantidad_disponible = cantidad_disponible - $1 WHERE id_formato_producto = $2',
+      [10, 1]
+    );
+    expect(mockClient.query).toHaveBeenCalledWith(
+      'INSERT INTO Detalle_Transacciones (id_transaccion, id_formato_producto, cantidad, precio_neto_unitario, iva_unitario, precio_bruto_unitario, subtotal_neto, subtotal_iva, subtotal_bruto, id_lote) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)',
+      [3, 2, 5, 100, 19, 119, 500, 95, 595, 2]
+    );
+    expect(mockClient.query).toHaveBeenCalledWith(
+      'UPDATE Inventario SET cantidad_disponible = cantidad_disponible - $1 WHERE id_formato_producto = $2',
+      [5, 2]
+    );
+    expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
   });
 
-  describe('GET /ventas/:id', () => {
-    it('should return a specific sale by id', async () => {
-      const postRes = await request(app)
-        .post('/ventas')
-        .set('Authorization', `Bearer ${token}`)
-        .send(newSale);
+  it('PUT /api/ventas/:id debería actualizar una venta y ajustar inventario con estado 200', async () => {
+    const ventaId = 1;
+    const oldDetalles = [
+      { id_formato_producto: 1, cantidad: 10 },
+      { id_formato_producto: 2, cantidad: 5 },
+    ];
+    const updatedVentaData = {
+      fecha_transaccion: '2023-01-01',
+      id_cliente: 1,
+      id_punto_venta: 1,
+      id_tipo_pago: 1,
+      factura: 'F-001-UPD',
+      observaciones: 'Venta actualizada',
+      detalles: [
+        { id_formato_producto: 1, cantidad: 12, precio_neto_unitario: 50, id_lote: 1 }, // Cantidad cambia de 10 a 12
+        { id_formato_producto: 3, cantidad: 8, precio_neto_unitario: 75, id_lote: 3 }, // Nuevo producto
+      ]
+    };
+    const updatedVenta = { id_transaccion: 1, ...updatedVentaData, total_neto: 1200, total_iva: 228, total_bruto: 1428 };
 
-      const res = await request(app)
-        .get(`/ventas/${postRes.body.id_venta}`)
-        .set('Authorization', `Bearer ${token}`);
+    mockClient.query
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rowCount: oldDetalles.length, rows: oldDetalles }) // SELECT old detalles
+      .mockResolvedValueOnce({}) // UPDATE Inventario 1 (revert)
+      .mockResolvedValueOnce({}) // UPDATE Inventario 2 (revert)
+      .mockResolvedValueOnce({}) // DELETE Detalle_Transacciones
+      .mockResolvedValueOnce({ rows: [updatedVenta] }) // UPDATE Transacciones
+      .mockResolvedValueOnce({}) // INSERT Detalle_Transacciones 1 (new)
+      .mockResolvedValueOnce({}) // UPDATE Inventario 1 (new)
+      .mockResolvedValueOnce({}) // INSERT Detalle_Transacciones 2 (new)
+      .mockResolvedValueOnce({}) // UPDATE Inventario 2 (new)
+      .mockResolvedValueOnce({}); // COMMIT
 
-      expect(res.statusCode).toEqual(200);
-      expect(res.body).toHaveProperty('id_venta', postRes.body.id_venta);
-      expect(res.body).toHaveProperty('observacion', 'Test sale 1');
-    });
+    const response = await request(app).put(`/api/ventas/${ventaId}`).send(updatedVentaData);
 
-    it('should return 404 for a non-existent sale', async () => {
-      const res = await request(app)
-        .get('/ventas/999999')
-        .set('Authorization', `Bearer ${token}`);
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual({ message: 'Sale updated and inventory adjusted successfully', venta: updatedVenta });
+    
+    const calls = mockClient.query.mock.calls;
+    let callIndex = 0;
 
-      expect(res.statusCode).toEqual(404);
-    });
+    expect(calls[callIndex++][0]).toBe('BEGIN');
+
+    expect(calls[callIndex][0]).toBe('SELECT id_formato_producto, cantidad FROM Detalle_Transacciones WHERE id_transaccion = $1');
+    expect(calls[callIndex++][1]).toEqual([`${ventaId}`]);
+
+    expect(calls[callIndex][0]).toBe('UPDATE Inventario SET cantidad_disponible = cantidad_disponible + $1 WHERE id_formato_producto = $2');
+    expect(calls[callIndex++][1]).toEqual([10, 1]);
+
+    expect(calls[callIndex][0]).toBe('UPDATE Inventario SET cantidad_disponible = cantidad_disponible + $1 WHERE id_formato_producto = $2');
+    expect(calls[callIndex++][1]).toEqual([5, 2]);
+
+    expect(calls[callIndex][0]).toBe('DELETE FROM Detalle_Transacciones WHERE id_transaccion = $1');
+    expect(calls[callIndex++][1]).toEqual([`${ventaId}`]);
+
+    expect(calls[callIndex][0]).toBe(
+      'UPDATE Transacciones SET fecha_transaccion = $1, id_cliente = $2, id_punto_venta = $3, id_tipo_pago = $4, total_neto = $5, total_iva = $6, total_bruto = $7, factura = $8, observaciones = $9 WHERE id_transaccion = $10 RETURNING *'
+    );
+    expect(calls[callIndex++][1]).toEqual(
+      [updatedVentaData.fecha_transaccion, updatedVentaData.id_cliente, updatedVentaData.id_punto_venta, updatedVentaData.id_tipo_pago, 1200, 228, 1428, updatedVentaData.factura, updatedVentaData.observaciones, `${ventaId}`]
+    );
+
+    expect(calls[callIndex][0]).toBe(
+      'INSERT INTO Detalle_Transacciones (id_transaccion, id_formato_producto, cantidad, precio_neto_unitario, iva_unitario, precio_bruto_unitario, subtotal_neto, subtotal_iva, subtotal_bruto, id_lote) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)'
+    );
+    expect(calls[callIndex++][1]).toEqual(
+      [`${ventaId}`, 1, 12, 50, 9.5, 59.5, 600, 114, 714, 1]
+    );
+
+    expect(calls[callIndex][0]).toBe(
+      'UPDATE Inventario SET cantidad_disponible = cantidad_disponible - $1 WHERE id_formato_producto = $2'
+    );
+    expect(calls[callIndex++][1]).toEqual(
+      [12, 1]
+    );
+
+    expect(calls[callIndex][0]).toBe(
+      'INSERT INTO Detalle_Transacciones (id_transaccion, id_formato_producto, cantidad, precio_neto_unitario, iva_unitario, precio_bruto_unitario, subtotal_neto, subtotal_iva, subtotal_bruto, id_lote) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)'
+    );
+    expect(calls[callIndex++][1]).toEqual(
+      [`${ventaId}`, 3, 8, 75, 14.25, 89.25, 600, 114, 714, 3]
+    );
+
+    expect(calls[callIndex][0]).toBe(
+      'UPDATE Inventario SET cantidad_disponible = cantidad_disponible - $1 WHERE id_formato_producto = $2'
+    );
+    expect(calls[callIndex++][1]).toEqual(
+      [8, 3]
+    );
+
+    expect(calls[callIndex++][0]).toBe('COMMIT');
   });
 
-  describe('POST /ventas', () => {
-    it('should return 400 if id_cliente is missing', async () => {
-      const { id_cliente, ...sale } = newSale;
-      const res = await request(app)
-        .post('/ventas')
-        .set('Authorization', `Bearer ${token}`)
-        .send(sale);
-      expect(res.statusCode).toEqual(400);
-    });
+  it('PUT /api/ventas/:id debería devolver 404 si la venta no existe', async () => {
+    const ventaId = 999;
+    const updatedVentaData = {
+      fecha_transaccion: '2023-01-01',
+      id_cliente: 1,
+      id_punto_venta: 1,
+      id_tipo_pago: 1,
+      detalles: [{ id_formato_producto: 1, cantidad: 10, precio_neto_unitario: 50, id_lote: 1 }]
+    };
+    mockClient.query
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }); // SELECT old detalles (no encuentra)
 
-    it('should return 400 if detalles is missing', async () => {
-      const { detalles, ...sale } = newSale;
-      const res = await request(app)
-        .post('/ventas')
-        .set('Authorization', `Bearer ${token}`)
-        .send(sale);
-      expect(res.statusCode).toEqual(400);
-    });
+    const response = await request(app).put(`/api/ventas/${ventaId}`).send(updatedVentaData);
 
-    it('should return 400 if neto_venta is not a number', async () => {
-      const sale = { ...newSale, neto_venta: 'invalid' };
-      const res = await request(app)
-        .post('/ventas')
-        .set('Authorization', `Bearer ${token}`)
-        .send(sale);
-      expect(res.statusCode).toEqual(400);
-    });
+    expect(response.statusCode).toBe(404);
+    expect(response.body.message).toBe('Sale not found');
+    expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
   });
 
-  describe('DELETE /ventas/:id', () => {
-    it('should delete a sale', async () => {
-      const postRes = await request(app)
-        .post('/ventas')
-        .set('Authorization', `Bearer ${token}`)
-        .send(newSale);
+  it('DELETE /api/ventas/:id debería eliminar una venta y revertir inventario con estado 200', async () => {
+    const ventaId = 1;
+    const oldDetalles = [
+      { id_formato_producto: 1, cantidad: 10 },
+      { id_formato_producto: 2, cantidad: 5 },
+    ];
+    const deletedVenta = { id_transaccion: 1, fecha_transaccion: '2023-01-01' };
 
-      const res = await request(app)
-        .delete(`/ventas/${postRes.body.id_venta}`)
-        .set('Authorization', `Bearer ${token}`);
+    mockClient.query
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rowCount: oldDetalles.length, rows: oldDetalles }) // SELECT old detalles
+      .mockResolvedValueOnce({}) // UPDATE Inventario 1 (revert)
+      .mockResolvedValueOnce({}) // UPDATE Inventario 2 (revert)
+      .mockResolvedValueOnce({}) // DELETE Detalle_Transacciones
+      .mockResolvedValueOnce({ rowCount: 1, rows: [deletedVenta] }) // DELETE Transacciones
+      .mockResolvedValueOnce({}); // COMMIT
 
-      expect(res.statusCode).toEqual(200);
-    });
+    const response = await request(app).delete(`/api/ventas/${ventaId}`);
 
-    it('should return 404 for a non-existent sale', async () => {
-      const res = await request(app)
-        .delete('/ventas/999999')
-        .set('Authorization', `Bearer ${token}`);
+    expect(response.statusCode).toBe(200);
+    expect(response.body).toEqual({ message: 'Sale deleted and inventory reverted successfully', venta: deletedVenta });
+    expect(mockClient.query).toHaveBeenCalledWith('BEGIN');
+    expect(mockClient.query).toHaveBeenCalledWith(
+      'SELECT id_formato_producto, cantidad FROM Detalle_Transacciones WHERE id_transaccion = $1',
+      [`${ventaId}`]
+    );
+    expect(mockClient.query).toHaveBeenCalledWith(
+      'UPDATE Inventario SET cantidad_disponible = cantidad_disponible + $1 WHERE id_formato_producto = $2',
+      [10, 1]
+    );
+    expect(mockClient.query).toHaveBeenCalledWith(
+      'UPDATE Inventario SET cantidad_disponible = cantidad_disponible + $1 WHERE id_formato_producto = $2',
+      [5, 2]
+    );
+    expect(mockClient.query).toHaveBeenCalledWith('DELETE FROM Detalle_Transacciones WHERE id_transaccion = $1', [`${ventaId}`]);
+    expect(mockClient.query).toHaveBeenCalledWith('DELETE FROM Transacciones WHERE id_transaccion = $1 RETURNING *', [`${ventaId}`]);
+    expect(mockClient.query).toHaveBeenCalledWith('COMMIT');
+  });
 
-      expect(res.statusCode).toEqual(404);
-    });
+  it('DELETE /api/ventas/:id debería devolver 404 si la venta no existe', async () => {
+    const ventaId = 999;
+    mockClient.query
+      .mockResolvedValueOnce({}) // BEGIN
+      .mockResolvedValueOnce({ rowCount: 0, rows: [] }); // SELECT old detalles (no encuentra)
+
+    const response = await request(app).delete(`/api/ventas/${ventaId}`);
+
+    expect(response.statusCode).toBe(404);
+    expect(response.body.message).toBe('Sale not found');
+    expect(mockClient.query).toHaveBeenCalledWith('ROLLBACK');
+  });
+
+  it('Debería manejar errores de la base de datos para GET /api/ventas', async () => {
+    mockPool.query.mockRejectedValueOnce(new Error('Database error'));
+
+    const response = await request(app).get('/api/ventas');
+
+    expect(response.statusCode).toBe(500);
+    expect(response.body.message).toBe('Internal server error');
   });
 });
