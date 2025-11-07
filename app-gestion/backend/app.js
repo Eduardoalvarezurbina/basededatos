@@ -9,6 +9,7 @@ const createLookupRoutes = require('./routes/lookups');
 const createClientRoutes = require('./routes/clients');
 const createProductFormatRoutes = require('./routes/productFormats');
 const createLotRoutes = require('./routes/lots');
+const createProcessRoutes = require('./routes/processes');
 
 const app = express();
 
@@ -32,6 +33,7 @@ app.use('/api/lookups', createLookupRoutes(pool));
 app.use('/api/clients', createClientRoutes(pool));
 app.use('/api/product-formats', createProductFormatRoutes(pool));
 app.use('/api/lots', createLotRoutes(pool));
+app.use('/api/processes', createProcessRoutes(pool));
 
 // TODO: Migrar las rutas restantes de index.js (login, ventas, etc.)
 
