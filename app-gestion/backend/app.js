@@ -6,6 +6,7 @@ const { Pool } = require('pg');
 const createProductRoutes = require('./routes/products');
 const createAuthRoutes = require('./routes/auth');
 const createLookupRoutes = require('./routes/lookups');
+const createClientRoutes = require('./routes/clients');
 
 const app = express();
 
@@ -26,6 +27,7 @@ const pool = new Pool({
 app.use('/api/products', createProductRoutes(pool));
 app.use('/api/auth', createAuthRoutes(pool));
 app.use('/api/lookups', createLookupRoutes(pool));
+app.use('/api/clients', createClientRoutes(pool));
 
 // TODO: Migrar las rutas restantes de index.js (login, ventas, etc.)
 
