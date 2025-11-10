@@ -42,7 +42,7 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
 
 *   **Paso 2.2: Módulo de Compras:**
     *   **ESTADO:** HECHO.
-    *   **CONTEXTO:** Se implementó la gestión de proveedores (creación y listado) y la interfaz para el registro de nuevas compras, incluyendo la selección de proveedor, productos, cantidades y cálculo automático de totales. También se añadió la visualización del historial de compras.
+    *   **CONTEXTO:** Se implementó la gestión de proveedores (creación y listado) y el CRUD completo (creación, visualización, actualización y eliminación) para el registro de compras, incluyendo la selección de proveedor, productos, cantidades y cálculo automático de totales, así como la visualización del historial de compras.
 
 *   **Paso 2.3: Módulo de Pedidos y Ventas:**
     *   **ESTADO:** HECHO.

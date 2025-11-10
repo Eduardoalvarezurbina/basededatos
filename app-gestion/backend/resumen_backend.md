@@ -38,13 +38,13 @@ El backend es el **cerebro y el intermediario** del sistema. No almacena datos, 
     - `GET /historial-precios/:id_formato_producto`: Consulta el historial de un producto.
 
 ### Gestión de Compras (`/compras`)
-- **Propósito:** Registrar compras a proveedores y su impacto en el inventario.
+- **Propósito:** Registrar, consultar, actualizar y eliminar compras a proveedores y su impacto en el inventario.
 - **Endpoints:**
     - `POST /compras`: Registra una compra y actualiza el stock en la ubicación correcta.
     - `GET /compras`: Obtiene el historial de compras.
     - `GET /compras/:id`: Obtiene una compra específica por ID.
-    - `PUT /compras/:id`: Actualiza campos de cabecera de una compra.
-    - `DELETE /compras/:id`: Elimina una compra y revierte el inventario.
+    - `PUT /compras/:id`: Actualiza una compra existente, incluyendo sus detalles y ajustando el inventario.
+    - `DELETE /compras/:id`: Elimina una compra, incluyendo sus detalles y revierte el inventario.
 
 ### Flujo de Pedido a Venta (`/pedidos`, `/ventas`)
 - **Propósito:** Manejar el ciclo de vida completo de una venta, desde el agendamiento hasta la concreción y consulta.

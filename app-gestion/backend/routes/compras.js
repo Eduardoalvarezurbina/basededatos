@@ -10,7 +10,10 @@ function createCompraRoutes(pool, verifyToken, authorizeRole) {
   router.use(authorizeRole(['admin', 'worker']));
 
   router.post('/', controller.createCompra);
-  // Other routes (GET, PUT, DELETE) will go here
+  router.get('/', controller.getAllCompras);
+  router.get('/:id', controller.getCompraById);
+  router.put('/:id', controller.updateCompra);
+  router.delete('/:id', controller.deleteCompra);
 
   return router;
 }
