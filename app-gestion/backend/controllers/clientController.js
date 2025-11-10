@@ -14,7 +14,7 @@ const createClientController = (pool) => {
       `);
       res.json(result.rows);
     } catch (err) {
-      console.error('Error getting clients:', err);
+      // console.error('Error getting clients:', err);
       res.status(500).json({ message: 'Internal server error' });
     }
   };

@@ -6,6 +6,7 @@ function createProcessRoutes(pool) {
   const controller = createProcessController(pool);
 
   router.get('/', controller.getAllProcesses);
+  router.get('/:id', controller.getProcessById);
   router.post('/', controller.createProcess);
   router.put('/:id', controller.updateProcess);
   router.delete('/:id', controller.deleteProcess);

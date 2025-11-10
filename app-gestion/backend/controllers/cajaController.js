@@ -29,7 +29,7 @@ const createCajaController = (pool) => {
 
     } catch (err) {
       await client.query('ROLLBACK');
-      console.error('Error al abrir la caja:', err);
+      // console.error('Error al abrir la caja:', err);
       if (err.message.includes('Ya existe una caja abierta')) {
         return res.status(409).json({ message: err.message });
       }
@@ -78,7 +78,7 @@ const createCajaController = (pool) => {
 
     } catch (err) {
       await client.query('ROLLBACK');
-      console.error('Error al cerrar la caja:', err);
+      // console.error('Error al cerrar la caja:', err);
       if (err.message.includes('No hay una caja abierta')) {
         return res.status(404).json({ message: err.message });
       }

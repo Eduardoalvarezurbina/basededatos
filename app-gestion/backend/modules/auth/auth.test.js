@@ -14,7 +14,7 @@ jest.mock('pg', () => {
 process.env.JWT_SECRET = 'test_secret';
 
 // --- Importar la App ---
-const { app } = require('../../app');
+const { app, pool } = require('../../app')(global.testPool);
 
 describe('Módulo de Autenticación', () => {
 

@@ -14,11 +14,11 @@ const createProductController = (pool) => {
   };
 
   const createProduct = async (req, res) => {
-    const { nombre, categoria, unidad_medida } = req.body;
+    const { nombre, categoria, activo } = req.body;
     try {
       const result = await pool.query(
-        'INSERT INTO Productos (nombre, categoria, unidad_medida) VALUES ($1, $2, $3) RETURNING *',
-        [nombre, categoria, unidad_medida]
+        'INSERT INTO Productos (nombre, categoria, activo) VALUES ($1, $2, $3) RETURNING *',
+        [nombre, categoria, activo]
       );
       res.status(201).json(result.rows[0]);
     } catch (err) {
@@ -43,11 +43,11 @@ const createProductController = (pool) => {
 
   const updateProduct = async (req, res) => {
     const { id } = req.params;
-    const { nombre, categoria, unidad_medida, activo } = req.body;
+    const { nombre, categoria, activo } = req.body;
     try {
       const result = await pool.query(
-        'UPDATE Productos SET nombre = $1, categoria = $2, unidad_medida = $3, activo = $4 WHERE id_producto = $5 RETURNING *',
-        [nombre, categoria, unidad_medida, activo, id]
+        'UPDATE Productos SET nombre = $1, categoria = $2, activo = $3 WHERE id_producto = $4 RETURNING *',
+        [nombre, categoria, activo, id]
       );
       if (result.rowCount === 0) {
         return res.status(404).json({ message: 'Product not found' });

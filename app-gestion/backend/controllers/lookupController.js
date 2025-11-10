@@ -5,7 +5,7 @@ const createLookupController = (pool) => {
       const result = await pool.query('SELECT * FROM Ubicaciones_Inventario ORDER BY nombre');
       res.json(result.rows);
     } catch (err) {
-      console.error('Error getting locations:', err);
+      // console.error('Error getting locations:', err);
       res.status(500).json({ message: 'Internal server error' });
     }
   };

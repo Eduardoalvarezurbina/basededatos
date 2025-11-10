@@ -21,7 +21,7 @@ const createAuthController = (pool, bcrypt, jwt) => {
 
       res.json({ message: 'Login successful', token, role: user.role, id_usuario: user.id_usuario });
     } catch (err) {
-      console.error('Login error:', err);
+      // console.error('Login error:', err);
       res.status(500).json({ message: 'Internal server error' });
     }
   };

@@ -256,21 +256,34 @@ Este documento lista todos los endpoints disponibles en el backend de la aplicac
 ## Ventas
 
 *   **POST /ventas**
-    *   **Descripción:** Crea una nueva venta, descuenta del inventario y registra costos.
-    *   **Body:** `{ id_cliente, id_punto_venta, id_tipo_pago, id_trabajador, neto_venta, iva_venta, total_bruto_venta, con_iva_venta, observacion, estado, estado_pago, con_factura, detalles: [{ id_formato_producto, cantidad, precio_unitario, id_lote, id_ubicacion }] }`
-    *   **Respuesta:** `{ message: 'Sale created successfully', id_venta: newVentaId }`
-    *   **Test Status:** **OK** - Tested with `api_test.js`.
+    *   **Descripción:** Crea una nueva venta. El backend calcula los totales (neto, iva, bruto), descuenta del inventario y registra los costos.
+    *   **Body:** `{ fecha_transaccion, id_cliente, id_punto_venta, id_tipo_pago, factura, observaciones, detalles: [{ id_formato_producto, cantidad, precio_neto_unitario, id_lote }] }`
+    *   **Respuesta (201 Created):** `{ message: 'Venta creada exitosamente', id_venta: newVentaId }`
+    *   **Test Status:** PENDIENTE.
 
 *   **GET /ventas**
-    *   **Descripción:** Obtiene un historial de todas las ventas.
-    *   **Respuesta:** `Array` de objetos `Venta` con `nombre_cliente`.
-    *   **Test Status:** **OK** - Tested with `api_test.js`.
+    *   **Descripción:** Obtiene un historial de todas las ventas con información detallada.
+    *   **Respuesta:** `Array` de objetos `Venta`. Cada objeto incluye `id_transaccion`, `fecha_transaccion`, `nombre_cliente`, `total_bruto` y un array de `detalles` con `nombre_producto`, `cantidad` y `precio_neto_unitario`.
+    *   **Test Status:** PENDIENTE.
 
 *   **GET /ventas/:id**
     *   **Descripción:** Obtiene el detalle completo de una venta específica.
     *   **Parámetros:** `id` (ID de la venta).
-    *   **Respuesta:** Objeto `Venta` con `detalles`.
-    *   **Test Status:** **OK** - Tested with `api_test.js`.
+    *   **Respuesta:** Objeto `Venta` con `id_transaccion`, `fecha_transaccion`, `nombre_cliente`, `total_bruto` y un array de `detalles` con `nombre_producto`, `cantidad` y `precio_neto_unitario`.
+    *   **Test Status:** PENDIENTE.
+
+*   **PUT /ventas/:id**
+    *   **Descripción:** Actualiza una venta existente. Esta operación es un reemplazo completo: revierte el inventario de los productos originales, elimina los detalles antiguos, inserta los nuevos detalles y descuenta el nuevo inventario.
+    *   **Parámetros:** `id` (ID de la venta).
+    *   **Body:** `{ fecha_transaccion, id_cliente, id_punto_venta, id_tipo_pago, factura, observaciones, detalles: [{ id_formato_producto, cantidad, precio_neto_unitario, id_lote }] }`
+    *   **Respuesta (200 OK):** `{ message: 'Venta actualizada y inventario ajustado exitosamente', venta: updatedVenta }`
+    *   **Test Status:** PENDIENTE.
+
+*   **DELETE /ventas/:id**
+    *   **Descripción:** Anula una venta y revierte el impacto en el inventario.
+    *   **Parámetros:** `id` (ID de la venta).
+    *   **Respuesta (200 OK):** `{ message: 'Venta eliminada e inventario revertido exitosamente', venta: deletedVenta }`
+    *   **Test Status:** PENDIENTE.
 
 ---
 

@@ -9,7 +9,7 @@ jest.mock('pg', () => {
 });
 
 // --- Importar la App ---
-const { app } = require('../../app');
+const { app, pool } = require('../../app')(global.testPool);
 
 describe('Módulo de Lookups', () => {
 

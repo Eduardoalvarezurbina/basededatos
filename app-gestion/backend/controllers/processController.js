@@ -17,6 +17,7 @@ const createProcessController = (pool) => {
         [nombre_proceso, tipo_proceso, id_formato_producto_final, observacion]
       );
       const newProcesoId = procesoResult.rows[0].id_proceso;
+      console.log('newProcesoId:', newProcesoId);
 
       // Insertar cada ingrediente en Detalle_Procesos
       for (const ingrediente of ingredientes) {
@@ -64,6 +65,40 @@ const createProcessController = (pool) => {
       res.json(result.rows);
     } catch (err) {
       console.error('Error getting processes:', err);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+
+  const getProcessById = async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await pool.query(`
+        SELECT 
+          p.id_proceso, p.nombre_proceso, p.tipo_proceso, p.observacion,
+          fp.formato as formato_producto_final,
+          prod.nombre as nombre_producto_final,
+          (SELECT json_agg(json_build_object(
+            'id_detalle_proceso', dp.id_detalle_proceso,
+            'id_formato_producto_ingrediente', dp.id_formato_producto_ingrediente,
+            'cantidad_requerida', dp.cantidad_requerida,
+            'nombre_ingrediente', p_ing.nombre,
+            'formato_ingrediente', fp_ing.formato
+          )) FROM Detalle_Procesos dp
+             JOIN Formatos_Producto fp_ing ON dp.id_formato_producto_ingrediente = fp_ing.id_formato_producto
+             JOIN Productos p_ing ON fp_ing.id_producto = p_ing.id_producto
+             WHERE dp.id_proceso = p.id_proceso
+          ) as ingredientes
+        FROM Procesos p
+        JOIN Formatos_Producto fp ON p.id_formato_producto_final = fp.id_formato_producto
+        JOIN Productos prod ON fp.id_producto = prod.id_producto
+        WHERE p.id_proceso = $1
+      `, [id]);
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'Process not found' });
+      }
+      res.json(result.rows[0]);
+    } catch (err) {
+      console.error('Error getting process by ID:', err);
       res.status(500).json({ message: 'Internal server error' });
     }
   };
@@ -144,6 +179,7 @@ const createProcessController = (pool) => {
   return {
     createProcess,
     getAllProcesses,
+    getProcessById,
     updateProcess,
     deleteProcess,
   };

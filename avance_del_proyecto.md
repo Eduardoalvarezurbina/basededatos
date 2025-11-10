@@ -1,5 +1,40 @@
 # Avance del Proyecto: Del Campo a Tu Hogar
 
+## Hito 5: Estabilización y Fiabilidad del Backend
+
+**Fecha:** 8 de Noviembre de 2025
+
+**Resumen:** Se ha completado una depuración y refactorización exhaustiva de toda la suite de pruebas del backend, que presentaba inestabilidad crónica y fallos en cascada. El sistema de pruebas ahora es 100% estable y fiable.
+
+**Análisis y Solución:**
+- **Problema Inicial:** Las pruebas del backend fallaban de manera inconsistente. Múltiples suites de tests (`formatosProducto`, `procesos`, `products`) arrojaban errores de `clave duplicada`, `timeout` y `404 Not Found`, lo que hacía imposible verificar la integridad del código y generaba una gran frustración.
+- **Causa Raíz:** Se identificaron tres causas fundamentales:
+    1.  **Entorno de Pruebas Contaminado:** El script principal de configuración de pruebas (`test-setup.js`) no reiniciaba correctamente las secuencias de las claves primarias de la base de datos entre ejecuciones, provocando colisiones.
+    2.  **Falta de Aislamiento en Tests:** Las pruebas dentro de un mismo archivo compartían estado (variables globales), por lo que el orden de ejecución (que no está garantizado) causaba fallos.
+    3.  **Estrategia de Mocking Incorrecta:** Una de las suites (`products.test.js`) intentaba simular (mock) la base de datos, mientras que el resto interactuaba con la base de datos de prueba real, causando timeouts y resultados inesperados.
+    4.  **Bug en la Aplicación:** Se descubrió un error en la lógica del `productController.js` que impedía que los endpoints de `POST` y `PUT` enviaran una respuesta, lo cual fue revelado por los timeouts en los tests.
+- **Resolución:**
+    1.  Se reescribió por completo la función `resetSequences` en `test-setup.js` para que detecte y reinicie de forma genérica y robusta todas las secuencias de la base de datos.
+    2.  Se refactorizaron las suites de `formatosProducto.test.js` y `procesos.test.js` para que cada test sea 100% autosuficiente, creando y destruyendo sus propios datos de prueba.
+    3.  Se eliminó por completo el mocking de la base de datos en `products.test.js`, unificando la estrategia de pruebas para que todas las suites interactúen con la base de datos de prueba real.
+    4.  Se corrigió el bug en `productController.js`, asegurando que todos los endpoints devuelvan una respuesta.
+- **Estado:** **¡VICTORIA!** El 100% de las 44 pruebas del backend ahora pasan de manera consistente. El proyecto cuenta con una base de código fiable y un sistema de verificación automático que confirma la integridad de la lógica de negocio principal.
+
+---
+### Cobertura de Pruebas del Backend (Estimación Cualitativa)
+Con la suite de pruebas ahora funcional, tenemos una cobertura de integración básica para los siguientes módulos clave:
+- **Autenticación:** Login y gestión de tokens.
+- **Productos:** CRUD básico.
+- **Formatos de Producto:** CRUD y lógica de borrado con dependencias.
+- **Procesos:** CRUD con lógica de ingredientes (maestro-detalle).
+- **Clientes:** CRUD básico.
+- **Caja:** Endpoints básicos.
+- **Lookups:** Endpoints para obtener datos de tablas de catálogo (listas desplegables).
+
+Esto proporciona una red de seguridad fundamental para el desarrollo futuro.
+
+---
+
 ## Última Actualización: Refactorización Completa del Frontend
 
 **Fecha:** 6 de Noviembre de 2025

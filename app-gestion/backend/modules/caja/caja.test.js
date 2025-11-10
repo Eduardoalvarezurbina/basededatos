@@ -1,5 +1,5 @@
 const request = require('supertest');
-const { app } = require('../../app');
+const { app, pool } = require('../../app')(global.testPool);
 const { Pool } = require('pg'); // Import Pool from the mocked 'pg' module
 
 jest.mock('pg', () => {

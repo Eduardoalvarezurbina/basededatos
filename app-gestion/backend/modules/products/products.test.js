@@ -1,99 +1,92 @@
 const request = require('supertest');
+const { app, pool } = require('../../app')(global.testPool); // Use the real pool from the test setup
 
-// --- Mock de la Base de Datos ---
-const mockPool = {
-  query: jest.fn(),
-  // No necesitamos mockear connect aquí porque el controlador usa pool.query
-};
-jest.mock('pg', () => {
-  // Mockeamos la clase Pool para que cuando app.js la instancie,
-  // devuelva nuestro mockPool.
-  return { Pool: jest.fn(() => mockPool) };
-});
+describe('Módulo de Productos (Integración con DB)', () => {
 
-// --- Importar la App ---
-// app.js ya no inicia un servidor, solo define la app.
-// Esto es ideal para testing.
-const { app } = require('../../app');
+  // No beforeEach needed if tests are fully self-contained.
 
-describe('Módulo de Productos Refactorizado (Arquitectura Limpia)', () => {
-
-  beforeEach(() => {
-    // Limpiar el mock de query antes de cada prueba
-    mockPool.query.mockClear();
+  afterAll(() => {
+    // The test setup script handles pool closing if necessary.
   });
 
-  // No se necesita afterAll(server.close()) porque supertest
-  // maneja el ciclo de vida del servidor cuando se le pasa la app.
-
   it('GET /api/products debería devolver una lista de productos con estado 200', async () => {
-    const mockProducts = [
-      { id_producto: 1, nombre: 'Manzana' },
-      { id_producto: 2, nombre: 'Leche' },
-    ];
-    mockPool.query.mockResolvedValueOnce({ rows: mockProducts });
-
+    // The DML scripts already populate products, so we can just test the endpoint
     const response = await request(app).get('/api/products');
 
     expect(response.statusCode).toBe(200);
-    expect(response.body).toEqual(mockProducts);
-    expect(mockPool.query).toHaveBeenCalledWith('SELECT * FROM Productos ORDER BY id_producto');
+    expect(Array.isArray(response.body)).toBe(true);
+    // Check that we have more products than the ones we might create in other tests
+    expect(response.body.length).toBeGreaterThan(5); 
   });
 
   it('POST /api/products debería crear un nuevo producto con estado 201', async () => {
-    const newProduct = { nombre: 'Naranja', categoria: 'Fruta', unidad_medida: 'kg' };
-    const createdProduct = { id_producto: 3, ...newProduct };
-    mockPool.query.mockResolvedValueOnce({ rows: [createdProduct] });
-
+    const newProduct = { nombre: 'Test Naranja', categoria: 'Fruta Test', activo: true };
+    
     const response = await request(app).post('/api/products').send(newProduct);
 
     expect(response.statusCode).toBe(201);
-    expect(response.body).toEqual(createdProduct);
-    expect(mockPool.query).toHaveBeenCalledWith(
-      'INSERT INTO Productos (nombre, categoria, unidad_medida) VALUES ($1, $2, $3) RETURNING *',
-      [newProduct.nombre, newProduct.categoria, newProduct.unidad_medida]
-    );
+    expect(response.body).toHaveProperty('id_producto');
+    expect(response.body.nombre).toBe(newProduct.nombre);
+
+    // Cleanup
+    await pool.query('DELETE FROM Productos WHERE id_producto = $1', [response.body.id_producto]);
   });
 
   it('PUT /api/products/:id debería actualizar un producto existente con estado 200', async () => {
-    const updatedProductData = { nombre: 'Leche Entera', categoria: 'Lácteo', unidad_medida: 'litro', activo: true };
-    const updatedProduct = { id_producto: 2, ...updatedProductData };
-    mockPool.query.mockResolvedValueOnce({ rowCount: 1, rows: [updatedProduct] });
+    // Setup: create a product to update
+    const productRes = await pool.query("INSERT INTO Productos (nombre, categoria, activo) VALUES ('Producto a Actualizar', 'Test', true) RETURNING *");
+    const productToUpdate = productRes.rows[0];
 
-    const response = await request(app).put('/api/products/2').send(updatedProductData);
+    const updatedProductData = { nombre: 'Producto Ya Actualizado', categoria: 'Lácteo Test', activo: false };
+
+    const response = await request(app).put(`/api/products/${productToUpdate.id_producto}`).send(updatedProductData);
 
     expect(response.statusCode).toBe(200);
-    expect(response.body).toEqual({ message: 'Product updated successfully', product: updatedProduct });
-    expect(mockPool.query).toHaveBeenCalledWith(
-      'UPDATE Productos SET nombre = $1, categoria = $2, unidad_medida = $3, activo = $4 WHERE id_producto = $5 RETURNING *',
-      [updatedProductData.nombre, updatedProductData.categoria, updatedProductData.unidad_medida, updatedProductData.activo, '2']
-    );
+    expect(response.body.product.id_producto).toBe(productToUpdate.id_producto);
+    expect(response.body.product.nombre).toBe(updatedProductData.nombre);
+    expect(response.body.product.activo).toBe(false);
+
+    // Cleanup
+    await pool.query('DELETE FROM Productos WHERE id_producto = $1', [productToUpdate.id_producto]);
   });
 
   it('DELETE /api/products/:id debería eliminar un producto con estado 200', async () => {
-    const deletedProduct = { id_producto: 1, nombre: 'Manzana' };
-    mockPool.query.mockResolvedValueOnce({ rowCount: 1, rows: [deletedProduct] });
+    // Setup: create a product to delete
+    const productRes = await pool.query("INSERT INTO Productos (nombre, categoria, activo) VALUES ('Producto a Borrar', 'Test', true) RETURNING *");
+    const productToDelete = productRes.rows[0];
 
-    const response = await request(app).delete('/api/products/1');
+    const response = await request(app).delete(`/api/products/${productToDelete.id_producto}`);
 
     expect(response.statusCode).toBe(200);
-    expect(response.body).toEqual({ message: 'Product deleted successfully', product: deletedProduct });
-    expect(mockPool.query).toHaveBeenCalledWith('DELETE FROM Productos WHERE id_producto = $1 RETURNING *', ['1']);
+    expect(response.body.product.id_producto).toBe(productToDelete.id_producto);
+
+    // Verify it's gone
+    const verifyRes = await pool.query('SELECT * FROM Productos WHERE id_producto = $1', [productToDelete.id_producto]);
+    expect(verifyRes.rowCount).toBe(0);
   });
 
   it('GET /api/products/active debería devolver solo productos activos con estado 200', async () => {
-    const mockActiveProducts = [{ id_producto: 1, nombre: 'Manzana', activo: true }];
-    mockPool.query.mockResolvedValueOnce({ rows: mockActiveProducts });
+    // Setup: ensure we have a known active and inactive product
+    const activeRes = await pool.query("INSERT INTO Productos (nombre, categoria, activo) VALUES ('Producto Activo Test', 'Test', true) RETURNING *");
+    const inactiveRes = await pool.query("INSERT INTO Productos (nombre, categoria, activo) VALUES ('Producto Inactivo Test', 'Test', false) RETURNING *");
+    const activeProduct = activeRes.rows[0];
+    const inactiveProduct = inactiveRes.rows[0];
 
     const response = await request(app).get('/api/products/active');
 
     expect(response.statusCode).toBe(200);
-    expect(response.body).toEqual(mockActiveProducts);
-    expect(mockPool.query).toHaveBeenCalledWith('SELECT * FROM Productos WHERE activo = TRUE ORDER BY nombre');
+    
+    // Check that the active product is in the list
+    expect(response.body.some(p => p.id_producto === activeProduct.id_producto)).toBe(true);
+    // Check that the inactive product is NOT in the list
+    expect(response.body.some(p => p.id_producto === inactiveProduct.id_producto)).toBe(false);
+
+    // Cleanup
+    await pool.query('DELETE FROM Productos WHERE id_producto = ANY($1::int[])', [[activeProduct.id_producto, inactiveProduct.id_producto]]);
   });
 
   it('GET /api/products/:id debería devolver 501 Not Implemented', async () => {
-    const response = await request(app).get('/api/products/99');
+    const response = await request(app).get('/api/products/9999'); // Use an ID that won't exist
     expect(response.statusCode).toBe(501);
     expect(response.body).toEqual({ message: 'Not Implemented' });
   });
