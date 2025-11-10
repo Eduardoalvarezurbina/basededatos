@@ -81,10 +81,87 @@ const createVentaController = (pool) => {
     }
   };
 
-  // Other controller functions (getAll, getById, etc.) will go here
+  const getAllVentas = async (req, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT
+          v.id_venta,
+          v.fecha,
+          v.observacion,
+          c.nombre AS nombre_cliente,
+          c.telefono AS telefono_cliente,
+          json_agg(
+            json_build_object(
+              'id_detalle_venta', dv.id_detalle_venta,
+              'id_formato_producto', dv.id_formato_producto,
+              'cantidad', dv.cantidad,
+              'precio_unitario', dv.precio_unitario,
+              'id_lote', dv.id_lote,
+              'id_ubicacion', dv.id_ubicacion,
+              'nombre_producto', p.nombre,
+              'formato_producto', fp.formato
+            )
+          ) AS detalles
+        FROM Ventas v
+        JOIN Clientes c ON v.id_cliente = c.id_cliente
+        JOIN Detalle_Ventas dv ON v.id_venta = dv.id_venta
+        JOIN Formatos_Producto fp ON dv.id_formato_producto = fp.id_formato_producto
+        JOIN Productos p ON fp.id_producto = p.id_producto
+        GROUP BY v.id_venta, c.nombre, c.telefono
+        ORDER BY v.fecha DESC;
+      `);
+      res.status(200).json(result.rows);
+    } catch (err) {
+      console.error('Error al obtener todas las ventas:', err);
+      res.status(500).json({ message: 'Internal server error', error: err.message });
+    }
+  };
+
+  const getVentaById = async (req, res) => {
+    const { id } = req.params;
+    try {
+      const result = await pool.query(`
+        SELECT
+          v.id_venta,
+          v.fecha,
+          v.observacion,
+          c.nombre AS nombre_cliente,
+          c.telefono AS telefono_cliente,
+          json_agg(
+            json_build_object(
+              'id_detalle_venta', dv.id_detalle_venta,
+              'id_formato_producto', dv.id_formato_producto,
+              'cantidad', dv.cantidad,
+              'precio_unitario', dv.precio_unitario,
+              'id_lote', dv.id_lote,
+              'id_ubicacion', dv.id_ubicacion,
+              'nombre_producto', p.nombre,
+              'formato_producto', fp.formato
+            )
+          ) AS detalles
+        FROM Ventas v
+        JOIN Clientes c ON v.id_cliente = c.id_cliente
+        JOIN Detalle_Ventas dv ON v.id_venta = dv.id_venta
+        JOIN Formatos_Producto fp ON dv.id_formato_producto = fp.id_formato_producto
+        JOIN Productos p ON fp.id_producto = p.id_producto
+        WHERE v.id_venta = $1
+        GROUP BY v.id_venta, c.nombre, c.telefono;
+      `, [id]);
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'Venta no encontrada.' });
+      }
+      res.status(200).json(result.rows[0]);
+    } catch (err) {
+      console.error('Error al obtener venta por ID:', err);
+      res.status(500).json({ message: 'Internal server error', error: err.message });
+    }
+  };
 
   return {
     createVenta,
+    getAllVentas,
+    getVentaById,
   };
 };
 

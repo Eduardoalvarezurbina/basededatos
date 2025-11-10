@@ -10,7 +10,9 @@ function createVentaRoutes(pool, verifyToken, authorizeRole) {
   router.use(authorizeRole(['admin', 'worker']));
 
   router.post('/', controller.createVenta);
-  // Other routes (GET, PUT, DELETE) will go here
+  router.get('/', controller.getAllVentas);
+  router.get('/:id', controller.getVentaById);
+  // Other routes (PUT, DELETE) will go here
 
   return router;
 }

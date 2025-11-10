@@ -40,6 +40,8 @@ describe('Ventas API (Integration)', () => {
   afterAll(async () => {
     // Cleanup all data
     await pool.query('DELETE FROM Usuarios WHERE username LIKE \'ventas_user_%\'');
+    await pool.query('DELETE FROM Detalle_Ventas WHERE id_venta IN (SELECT id_venta FROM Ventas WHERE id_cliente = $1)', [mockCliente.id_cliente]);
+    await pool.query('DELETE FROM Ventas WHERE id_cliente = $1', [mockCliente.id_cliente]);
     await pool.query('DELETE FROM Clientes WHERE id_cliente = $1', [mockCliente.id_cliente]);
     // Delete from Detalle_Movimientos_Inventario first, then Movimientos_Inventario
     await pool.query('DELETE FROM Detalle_Movimientos_Inventario WHERE id_formato_producto = $1', [mockFormatoProducto.id_formato_producto]);
@@ -85,6 +87,83 @@ describe('Ventas API (Integration)', () => {
     await pool.query('DELETE FROM Detalle_Ventas WHERE id_venta = $1', [ventaId]);
     await pool.query('DELETE FROM Ventas WHERE id_venta = $1', [ventaId]);
     await pool.query('UPDATE Inventario SET stock_actual = stock_actual + 10 WHERE id_formato_producto = $1 AND id_ubicacion = $2', [mockFormatoProducto.id_formato_producto, mockUbicacion.id_ubicacion]);
+  });
+  
+  it('GET /api/ventas - should retrieve all sales', async () => {
+    // First, create a sale to ensure there's data to retrieve
+    const newVenta = {
+      id_cliente: mockCliente.id_cliente,
+      observacion: 'Venta para GET ALL',
+      detalles: [
+        {
+          id_formato_producto: mockFormatoProducto.id_formato_producto,
+          cantidad: 5,
+          precio_unitario: 120,
+          id_lote: mockLote.id_lote,
+          id_ubicacion: mockUbicacion.id_ubicacion
+        }
+      ]
+    };
+    const createRes = await request(app)
+      .post('/api/ventas')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newVenta);
+    expect(createRes.statusCode).toBe(201);
+    const createdVentaId = createRes.body.id_venta;
+
+    const res = await request(app)
+      .get('/api/ventas')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    expect(res.body.some(venta => venta.id_venta === createdVentaId)).toBe(true);
+
+    // Cleanup
+    await pool.query('DELETE FROM Detalle_Ventas WHERE id_venta = $1', [createdVentaId]);
+    await pool.query('DELETE FROM Ventas WHERE id_venta = $1', [createdVentaId]);
+    await pool.query('UPDATE Inventario SET stock_actual = stock_actual + 5 WHERE id_formato_producto = $1 AND id_ubicacion = $2', [mockFormatoProducto.id_formato_producto, mockUbicacion.id_ubicacion]);
+  });
+
+  it('GET /api/ventas/:id - should retrieve a single sale by ID', async () => {
+    // First, create a sale to retrieve
+    const newVenta = {
+      id_cliente: mockCliente.id_cliente,
+      observacion: 'Venta para GET BY ID',
+      detalles: [
+        {
+          id_formato_producto: mockFormatoProducto.id_formato_producto,
+          cantidad: 2,
+          precio_unitario: 150,
+          id_lote: mockLote.id_lote,
+          id_ubicacion: mockUbicacion.id_ubicacion
+        }
+      ]
+    };
+    const createRes = await request(app)
+      .post('/api/ventas')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newVenta);
+    expect(createRes.statusCode).toBe(201);
+    const createdVentaId = createRes.body.id_venta;
+
+    const res = await request(app)
+      .get(`/api/ventas/${createdVentaId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('id_venta', createdVentaId);
+    expect(res.body).toHaveProperty('observacion', 'Venta para GET BY ID');
+    expect(res.body).toHaveProperty('detalles');
+    expect(Array.isArray(res.body.detalles)).toBe(true);
+    expect(res.body.detalles.length).toBeGreaterThan(0);
+    expect(res.body.detalles[0]).toHaveProperty('cantidad', 2);
+
+    // Cleanup
+    await pool.query('DELETE FROM Detalle_Ventas WHERE id_venta = $1', [createdVentaId]);
+    await pool.query('DELETE FROM Ventas WHERE id_venta = $1', [createdVentaId]);
+    await pool.query('UPDATE Inventario SET stock_actual = stock_actual + 2 WHERE id_formato_producto = $1 AND id_ubicacion = $2', [mockFormatoProducto.id_formato_producto, mockUbicacion.id_ubicacion]);
   });
   
   // Add tests for GET, GET by ID, PUT, and DELETE here
