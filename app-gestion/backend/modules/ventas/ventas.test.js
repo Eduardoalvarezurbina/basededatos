@@ -52,6 +52,7 @@ describe('Ventas API (Integration)', () => {
     await pool.query('DELETE FROM Formatos_Producto WHERE id_formato_producto = $1', [mockFormatoProducto.id_formato_producto]);
     await pool.query('DELETE FROM Lotes_Produccion WHERE id_lote = $1', [mockLote.id_lote]);
     await pool.query('DELETE FROM Productos WHERE id_producto = $1', [productoId]);
+    await pool.query('DELETE FROM Movimientos_Inventario WHERE id_ubicacion_origen = $1 OR id_ubicacion_destino = $1', [mockUbicacion.id_ubicacion]);
     await pool.query('DELETE FROM Ubicaciones_Inventario WHERE id_ubicacion = $1', [mockUbicacion.id_ubicacion]);
   });
 
@@ -166,5 +167,101 @@ describe('Ventas API (Integration)', () => {
     await pool.query('UPDATE Inventario SET stock_actual = stock_actual + 2 WHERE id_formato_producto = $1 AND id_ubicacion = $2', [mockFormatoProducto.id_formato_producto, mockUbicacion.id_ubicacion]);
   });
   
-  // Add tests for GET, GET by ID, PUT, and DELETE here
+  it('PUT /api/ventas/:id - should update a sale', async () => {
+    // First, create a sale to update
+    const newVenta = {
+      id_cliente: mockCliente.id_cliente,
+      observacion: 'Venta original',
+      detalles: [
+        {
+          id_formato_producto: mockFormatoProducto.id_formato_producto,
+          cantidad: 5,
+          precio_unitario: 100,
+          id_lote: mockLote.id_lote,
+          id_ubicacion: mockUbicacion.id_ubicacion
+        }
+      ]
+    };
+    const createRes = await request(app)
+      .post('/api/ventas')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newVenta);
+    expect(createRes.statusCode).toBe(201);
+    const createdVentaId = createRes.body.id_venta;
+
+    const updatedVentaData = {
+      observacion: 'Venta actualizada',
+      // Note: For simplicity, this PUT only updates the header.
+      // A full implementation might allow updating/adding/removing details,
+      // which would require more complex inventory adjustments.
+    };
+
+    const res = await request(app)
+      .put(`/api/ventas/${createdVentaId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(updatedVentaData);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('message', 'Venta actualizada con éxito.');
+
+    const fetchRes = await request(app)
+      .get(`/api/ventas/${createdVentaId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(fetchRes.statusCode).toBe(200);
+    expect(fetchRes.body).toHaveProperty('observacion', 'Venta actualizada');
+
+    // Cleanup
+    await pool.query('DELETE FROM Detalle_Ventas WHERE id_venta = $1', [createdVentaId]);
+    await pool.query('DELETE FROM Ventas WHERE id_venta = $1', [createdVentaId]);
+    // Revert inventory change from initial creation
+    await pool.query('UPDATE Inventario SET stock_actual = stock_actual + 5 WHERE id_formato_producto = $1 AND id_ubicacion = $2', [mockFormatoProducto.id_formato_producto, mockUbicacion.id_ubicacion]);
+  });
+
+  it('DELETE /api/ventas/:id - should delete a sale and reverse inventory changes', async () => {
+    // First, create a sale to delete
+    const initialStock = (await pool.query('SELECT stock_actual FROM Inventario WHERE id_formato_producto = $1 AND id_ubicacion = $2', [mockFormatoProducto.id_formato_producto, mockUbicacion.id_ubicacion])).rows[0].stock_actual;
+
+    const newVenta = {
+      id_cliente: mockCliente.id_cliente,
+      observacion: 'Venta para DELETE',
+      detalles: [
+        {
+          id_formato_producto: mockFormatoProducto.id_formato_producto,
+          cantidad: 15,
+          precio_unitario: 90,
+          id_lote: mockLote.id_lote,
+          id_ubicacion: mockUbicacion.id_ubicacion
+        }
+      ]
+    };
+    const createRes = await request(app)
+      .post('/api/ventas')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newVenta);
+    expect(createRes.statusCode).toBe(201);
+    const createdVentaId = createRes.body.id_venta;
+
+    // Verify stock decreased
+    const stockAfterSale = (await pool.query('SELECT stock_actual FROM Inventario WHERE id_formato_producto = $1 AND id_ubicacion = $2', [mockFormatoProducto.id_formato_producto, mockUbicacion.id_ubicacion])).rows[0].stock_actual;
+    expect(parseFloat(stockAfterSale)).toBe(parseFloat(initialStock) - 15);
+
+    const res = await request(app)
+      .delete(`/api/ventas/${createdVentaId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('message', 'Venta eliminada con éxito y stock revertido.');
+
+    // Verify sale is deleted
+    const fetchRes = await request(app)
+      .get(`/api/ventas/${createdVentaId}`)
+      .set('Authorization', `Bearer ${token}`);
+    expect(fetchRes.statusCode).toBe(404);
+
+    // Verify stock reverted
+    const stockAfterDelete = (await pool.query('SELECT stock_actual FROM Inventario WHERE id_formato_producto = $1 AND id_ubicacion = $2', [mockFormatoProducto.id_formato_producto, mockUbicacion.id_ubicacion])).rows[0].stock_actual;
+    expect(parseFloat(stockAfterDelete)).toBe(parseFloat(initialStock));
+  });
+  
 });

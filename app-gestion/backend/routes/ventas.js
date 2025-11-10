@@ -12,7 +12,8 @@ function createVentaRoutes(pool, verifyToken, authorizeRole) {
   router.post('/', controller.createVenta);
   router.get('/', controller.getAllVentas);
   router.get('/:id', controller.getVentaById);
-  // Other routes (PUT, DELETE) will go here
+  router.put('/:id', controller.updateVenta);
+  router.delete('/:id', controller.deleteVenta);
 
   return router;
 }

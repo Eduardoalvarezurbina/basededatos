@@ -158,10 +158,97 @@ const createVentaController = (pool) => {
     }
   };
 
+  const updateVenta = async (req, res) => {
+    const { id } = req.params;
+    const { observacion } = req.body; // Only allowing observation update for simplicity
+
+    try {
+      const result = await pool.query(
+        'UPDATE Ventas SET observacion = $1 WHERE id_venta = $2 RETURNING *',
+        [observacion, id]
+      );
+
+      if (result.rows.length === 0) {
+        return res.status(404).json({ message: 'Venta no encontrada para actualizar.' });
+      }
+      res.status(200).json({ message: 'Venta actualizada con éxito.', venta: result.rows[0] });
+    } catch (err) {
+      console.error('Error al actualizar la venta:', err);
+      res.status(500).json({ message: 'Internal server error', error: err.message });
+    }
+  };
+
+  const deleteVenta = async (req, res) => {
+    const { id } = req.params;
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // 1. Obtener detalles de la venta para revertir inventario
+      const detallesResult = await client.query(
+        'SELECT id_formato_producto, cantidad, id_ubicacion FROM Detalle_Ventas WHERE id_venta = $1',
+        [id]
+      );
+
+      if (detallesResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ message: 'Venta no encontrada para eliminar o sin detalles.' });
+      }
+
+      // 2. Revertir inventario y registrar movimientos
+      for (const detalle of detallesResult.rows) {
+        const { id_formato_producto, cantidad, id_ubicacion } = detalle;
+
+        // Aumentar stock en Inventario
+        await client.query(
+          'UPDATE Inventario SET stock_actual = stock_actual + $1, fecha_actualizacion = CURRENT_TIMESTAMP WHERE id_formato_producto = $2 AND id_ubicacion = $3',
+          [cantidad, id_formato_producto, id_ubicacion]
+        );
+
+        // Registrar movimiento de inventario (entrada por anulación de venta)
+        const movimientoResult = await client.query(
+          'INSERT INTO Movimientos_Inventario (fecha, tipo_movimiento, id_ubicacion_destino, observacion) VALUES (CURRENT_TIMESTAMP, \'entrada\', $1, $2) RETURNING id_movimiento',
+          [id_ubicacion, `Anulación Venta ID: ${id}`]
+        );
+        const id_movimiento = movimientoResult.rows[0].id_movimiento;
+
+        // Registrar detalle del movimiento de inventario
+        await client.query(
+          'INSERT INTO Detalle_Movimientos_Inventario (id_movimiento, id_formato_producto, cantidad, tipo_detalle) VALUES ($1, $2, $3, \'anulacion_venta\')',
+          [id_movimiento, id_formato_producto, cantidad]
+        );
+      }
+
+      // 3. Eliminar detalles de la venta
+      await client.query('DELETE FROM Detalle_Ventas WHERE id_venta = $1', [id]);
+
+      // 4. Eliminar la venta principal
+      const deleteResult = await client.query('DELETE FROM Ventas WHERE id_venta = $1 RETURNING *', [id]);
+
+      if (deleteResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return res.status(404).json({ message: 'Venta no encontrada para eliminar.' });
+      }
+
+      await client.query('COMMIT');
+      res.status(200).json({ message: 'Venta eliminada con éxito y stock revertido.' });
+
+    } catch (err) {
+      await client.query('ROLLBACK');
+      console.error('Error al eliminar la venta:', err);
+      res.status(500).json({ message: 'Internal server error', error: err.message });
+    } finally {
+      client.release();
+    }
+  };
+
   return {
     createVenta,
     getAllVentas,
     getVentaById,
+    updateVenta,
+    deleteVenta,
   };
 };
 
