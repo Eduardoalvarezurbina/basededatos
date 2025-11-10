@@ -13,6 +13,7 @@ const createLotRoutes = require('./modules/lotes/lotes');
 const createProcessRoutes = require('./modules/procesos/procesos');
 const createProduccionRoutes = require('./routes/produccion');
 const createPedidoRoutes = require('./routes/pedidos');
+const createCompraRoutes = require('./routes/compras');
 const { verifyToken, authorizeRole } = require('./routes/authMiddleware');
 
 module.exports = (externalPool = null) => { // Accept an optional externalPool
@@ -39,9 +40,9 @@ module.exports = (externalPool = null) => { // Accept an optional externalPool
   app.use('/api/product-formats', createProductFormatRoutes(pool, verifyToken, authorizeRole));
   app.use('/api/lots', createLotRoutes(pool, verifyToken, authorizeRole));
   app.use('/api/processes', createProcessRoutes(pool, verifyToken, authorizeRole));
+  app.use('/api/compras', createCompraRoutes(pool, verifyToken, authorizeRole));
   // app.use('/api/produccion', createProduccionRoutes(pool));
   // app.use('/api/reclamos', createReclamoRoutes(pool));
-  // app.use('/api/compras', createCompraRoutes(pool));
   // app.use('/api/ventas', createVentaRoutes(pool));
   app.use('/api/pedidos', createPedidoRoutes(pool));
   app.use('/api/caja', createCajaRoutes(pool));

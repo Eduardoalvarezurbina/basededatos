@@ -79,7 +79,8 @@ Esto proporciona una red de seguridad fundamental para el desarrollo futuro.
 - [x] Implementación del módulo de autenticación de usuarios.
   - **Solución definitiva para el usuario 'admin':** Se modificó el `index.js` del backend para que, al iniciar, verifique la existencia del usuario 'admin'. Si no existe, lo crea automáticamente con la contraseña 'admin' (generando el hash con `bcrypt` internamente) y el rol 'admin'. Esto asegura que el hash siempre sea compatible con la lógica de autenticación del backend y elimina problemas de sincronización de hashes en la base de datos.
   - Se eliminó el script `006_insert_admin_user.sql` ya que su funcionalidad fue absorbida por el backend.
-- [ ] Implementación del módulo de gestión de compras (CRUD).
+- [x] Implementación del módulo de gestión de compras (CRUD).
+  - **Implementación:** Se desarrolló el endpoint `POST /api/compras` para la creación de nuevas compras. La lógica incluye la inserción del registro principal en la tabla `Compras` y la iteración sobre los detalles para insertar en `Detalle_Compras`. Crucialmente, se implementó la actualización del `Inventario`, incrementando el `stock_actual` para los productos comprados o creando nuevas entradas de inventario si no existían. Toda la operación se maneja dentro de una transacción de base de datos para garantizar la atomicidad y la integridad de los datos.
 - [ ] Implementación del módulo de gestión de producción (CRUD).
 - [ ] Implementación del módulo de gestión de lotes (CRUD).
 - [ ] Implementación del módulo de gestión de reclamos (CRUD).

@@ -2,7 +2,7 @@ const createCajaController = (pool) => {
 
   const abrirCaja = async (req, res) => {
     const { monto_inicial } = req.body;
-    const fecha = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const fecha_actual = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
     const client = await pool.connect();
     try {
@@ -10,8 +10,8 @@ const createCajaController = (pool) => {
 
       // Verificar si ya hay una caja abierta para hoy
       const cajaAbiertaResult = await client.query(
-        "SELECT * FROM Caja WHERE fecha_apertura = $1 AND estado = 'abierta'",
-        [fecha]
+        "SELECT * FROM Caja WHERE fecha = $1 AND estado = 'abierta'",
+        [fecha_actual]
       );
 
       if (cajaAbiertaResult.rowCount > 0) {
@@ -20,8 +20,8 @@ const createCajaController = (pool) => {
 
       // Insertar la nueva caja
       const result = await client.query(
-        'INSERT INTO Caja (fecha_apertura, hora_apertura, monto_inicial, estado) VALUES ($1, CURRENT_TIME, $2, \'abierta\') RETURNING *',
-        [fecha, monto_inicial]
+        'INSERT INTO Caja (fecha, hora_apertura, monto_inicial, estado) VALUES ($1, CURRENT_TIME, $2, \'abierta\') RETURNING *',
+        [fecha_actual, monto_inicial]
       );
 
       await client.query('COMMIT');
@@ -40,7 +40,7 @@ const createCajaController = (pool) => {
   };
 
   const cerrarCaja = async (req, res) => {
-    const fecha = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+    const fecha_actual = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
 
     const client = await pool.connect();
     try {
@@ -48,8 +48,8 @@ const createCajaController = (pool) => {
 
       // 1. Encontrar la caja abierta de hoy
       const cajaResult = await client.query(
-        "SELECT * FROM Caja WHERE fecha_apertura = $1 AND estado = 'abierta' FOR UPDATE",
-        [fecha]
+        "SELECT * FROM Caja WHERE fecha = $1 AND estado = 'abierta' FOR UPDATE",
+        [fecha_actual]
       );
 
       if (cajaResult.rowCount === 0) {
@@ -62,15 +62,15 @@ const createCajaController = (pool) => {
         `SELECT COALESCE(SUM(total_bruto_venta), 0) as total_efectivo 
          FROM Ventas 
          WHERE fecha = $1 AND hora >= $2 AND id_tipo_pago = 1`, // Asumiendo que 1 es 'Efectivo'
-        [caja.fecha_apertura, caja.hora_apertura]
+        [caja.fecha, caja.hora_apertura] 
       );
       const totalVentasEfectivo = parseFloat(ventasResult.rows[0].total_efectivo);
 
       // 3. Calcular el monto final y actualizar la caja
       const montoFinal = parseFloat(caja.monto_inicial) + totalVentasEfectivo;
       const updateResult = await client.query(
-        "UPDATE Caja SET fecha_cierre = $1, hora_cierre = CURRENT_TIME, monto_final = $2, estado = 'cerrada' WHERE id_caja = $3 RETURNING *",
-        [fecha, montoFinal, caja.id_caja]
+        "UPDATE Caja SET fecha = $1, hora_cierre = CURRENT_TIME, monto_final = $2, estado = 'cerrada' WHERE id_caja = $3 RETURNING *",
+        [fecha_actual, montoFinal, caja.id_caja]
       );
 
       await client.query('COMMIT');
@@ -89,11 +89,11 @@ const createCajaController = (pool) => {
   };
 
   const getEstadoCaja = async (req, res) => {
-    const fecha = new Date().toISOString().slice(0, 10);
+    const fecha_actual = new Date().toISOString().slice(0, 10);
     try {
       const result = await pool.query(
-        "SELECT * FROM Caja WHERE fecha_apertura = $1 AND estado = 'abierta' ORDER BY hora_apertura DESC LIMIT 1",
-        [fecha]
+        "SELECT * FROM Caja WHERE fecha = $1 AND estado = 'abierta' ORDER BY hora_apertura DESC LIMIT 1",
+        [fecha_actual]
       );
 
       if (result.rowCount > 0) {
@@ -110,7 +110,7 @@ const createCajaController = (pool) => {
   const getHistorialCaja = async (req, res) => {
     try {
       const result = await pool.query(
-        "SELECT * FROM Caja WHERE estado = 'cerrada' ORDER BY fecha_cierre DESC, hora_cierre DESC"
+        "SELECT * FROM Caja WHERE estado = 'cerrada' ORDER BY fecha DESC, hora_cierre DESC"
       );
       res.json(result.rows);
     } catch (err) {

@@ -136,6 +136,7 @@ module.exports = async () => {
     await applyDMLScripts(pool);
     await resetSequences(pool); // Run the robust reset function
     console.log('Test database schema created successfully.');
+    
     global.testPool = pool;
 
     // Clear module cache to ensure app re-initializes with the test environment
