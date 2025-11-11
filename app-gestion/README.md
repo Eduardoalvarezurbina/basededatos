@@ -46,7 +46,7 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
 
 *   **Paso 2.3: Módulo de Pedidos y Ventas:**
     *   **ESTADO:** HECHO.
-    *   **CONTEXTO:** Se completó el flujo de pedidos. Existe un formulario para **Agendar un nuevo Pedido** (`PedidoForm.js`) y una vista de gestión (`PedidosManagement.js`) que lista los pedidos agendados y permite **convertirlos en una Venta** final.
+    *   **CONTEXTO:** Se completó el flujo de pedidos. Existe un formulario para **Agendar un nuevo Pedido** (`PedidoForm.js`) y una vista de gestión (`PedidosManagement.js`) que lista los pedidos agendados y permite **convertirlos en una Venta** final. Además, se implementó la API para la creación de nuevos pedidos, permitiendo registrar pedidos con detalles de productos.
 
 *   **Paso 2.4: Módulo de Clientes:**
     *   **ESTADO:** PENDIENTE.

@@ -49,7 +49,7 @@ module.exports = (externalPool = null) => { // Accept an optional externalPool
   app.use('/api/ventas', createVentaRoutes(pool, verifyToken, authorizeRole));
   app.use('/api/produccion', createProduccionRoutes(produccionController)); // Pass controller instance
   // app.use('/api/reclamos', createReclamoRoutes(pool));
-  app.use('/api/pedidos', createPedidoRoutes(pool));
+  app.use('/api/pedidos', createPedidoRoutes(pool, verifyToken, authorizeRole));
   app.use('/api/caja', createCajaRoutes(pool));
 
   return { app, pool }; // Return app and the pool (either external or newly created)
