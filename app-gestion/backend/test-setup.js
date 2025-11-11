@@ -7,6 +7,7 @@ const envPath = path.resolve(__dirname, '.env');
 require('dotenv').config({ path: envPath });
 
 process.env.NODE_ENV = 'test';
+process.env.JWT_SECRET = 'test_jwt_secret'; // Set a test JWT secret
 
 const pool = new Pool({
   user: process.env.DB_USER,
@@ -128,8 +129,11 @@ async function resetSequences(pool) {
 }
 
 
+module.exports.globalTestPool = pool;
+
 module.exports = async () => {
   console.log('Connecting to database: ' + process.env.DB_NAME);
+  global.testPool = pool; // Make the pool globally available
   try {
     await dropAllTables(pool);
     await applyMigrations(pool);
@@ -137,8 +141,6 @@ module.exports = async () => {
     await resetSequences(pool); // Run the robust reset function
     console.log('Test database schema created successfully.');
     
-    global.testPool = pool;
-
     // Clear module cache to ensure app re-initializes with the test environment
     delete require.cache[require.resolve('./app')];
 

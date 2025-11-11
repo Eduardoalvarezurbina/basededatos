@@ -15,6 +15,7 @@ const createProduccionRoutes = require('./routes/produccion');
 const createPedidoRoutes = require('./routes/pedidos');
 const createCompraRoutes = require('./routes/compras');
 const createVentaRoutes = require('./routes/ventas');
+const createProduccionController = require('./controllers/produccionController');
 const { verifyToken, authorizeRole } = require('./routes/authMiddleware');
 
 module.exports = (externalPool = null) => { // Accept an optional externalPool
@@ -33,6 +34,9 @@ module.exports = (externalPool = null) => { // Accept an optional externalPool
     port: process.env.DB_PORT,
   });
 
+  // --- Controllers ---
+  const produccionController = createProduccionController(pool); // Create controller instance
+
   // --- Rutas de la API ---
   app.use('/api/products', createProductRoutes(pool));
   app.use('/api/auth', createAuthRoutes(pool));
@@ -43,7 +47,7 @@ module.exports = (externalPool = null) => { // Accept an optional externalPool
   app.use('/api/processes', createProcessRoutes(pool, verifyToken, authorizeRole));
   app.use('/api/compras', createCompraRoutes(pool, verifyToken, authorizeRole));
   app.use('/api/ventas', createVentaRoutes(pool, verifyToken, authorizeRole));
-  // app.use('/api/produccion', createProduccionRoutes(pool));
+  app.use('/api/produccion', createProduccionRoutes(produccionController)); // Pass controller instance
   // app.use('/api/reclamos', createReclamoRoutes(pool));
   app.use('/api/pedidos', createPedidoRoutes(pool));
   app.use('/api/caja', createCajaRoutes(pool));

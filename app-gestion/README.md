@@ -38,7 +38,7 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
 
 *   **Paso 2.1: Módulo de Lotes y Producción:**
     *   **ESTADO:** HECHO.
-    *   **CONTEXTO:** Se implementó el flujo de producción en dos pasos (iniciar y finalizar jornada) tanto en el backend como en el frontend (`ProduccionDiaria.js`).
+    *   **CONTEXTO:** Se implementó el flujo de producción en dos pasos (iniciar y finalizar jornada) tanto en el backend como en el frontend (`ProduccionDiaria.js`). Además, se añadió la funcionalidad de transformación de productos para gestionar el consumo de un producto y la producción de otro, actualizando el inventario.
 
 *   **Paso 2.2: Módulo de Compras:**
     *   **ESTADO:** HECHO.
