@@ -1,8 +1,8 @@
 -- Esquema Consolidado y Limpio para PostgreSQL
--- Versión: 1.7
+-- Versión: 1.8
 -- Fecha de Generación: 2025-11-10
 -- Este script representa la estructura final y autorizada de la base de datos,
--- incluyendo un modelo de precios escalable y las últimas migraciones.
+-- incluyendo un modelo de precios escalable y las últimas migraciones (hasta la 043).
 
 -- 1. Tablas de Catálogo (Lookup Tables)
 CREATE TABLE IF NOT EXISTS Regiones (
@@ -185,16 +185,23 @@ CREATE TABLE IF NOT EXISTS Usuarios (
 CREATE TABLE IF NOT EXISTS Procesos (
     id_proceso SERIAL PRIMARY KEY,
     nombre_proceso VARCHAR(255) NOT NULL,
-    id_formato_producto_final INT REFERENCES Formatos_Producto(id_formato_producto),
     observacion TEXT,
-    tipo_proceso VARCHAR(50) CHECK (tipo_proceso IN ('PRODUCCION', 'ENVASADO'))
+    tipo_proceso VARCHAR(50) CHECK (tipo_proceso IN ('PRODUCCION', 'ENVASADO', 'COMPLEJO'))
 );
 
 CREATE TABLE IF NOT EXISTS Detalle_Procesos (
     id_detalle_proceso SERIAL PRIMARY KEY,
-    id_proceso INT REFERENCES Procesos(id_proceso),
+    id_proceso INT REFERENCES Procesos(id_proceso) ON DELETE CASCADE,
     id_formato_producto_ingrediente INT REFERENCES Formatos_Producto(id_formato_producto),
     cantidad_requerida DECIMAL(10, 2)
+);
+
+CREATE TABLE IF NOT EXISTS Detalle_Procesos_Salida (
+    id_detalle_proceso_salida SERIAL PRIMARY KEY,
+    id_proceso INT NOT NULL REFERENCES Procesos(id_proceso) ON DELETE CASCADE,
+    id_formato_producto_salida INT NOT NULL REFERENCES Formatos_Producto(id_formato_producto),
+    cantidad_producida DECIMAL(10, 2) NOT NULL,
+    UNIQUE (id_proceso, id_formato_producto_salida)
 );
 
 -- 3. Tablas Transaccionales
