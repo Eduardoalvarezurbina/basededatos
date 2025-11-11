@@ -1,5 +1,5 @@
 -- Esquema Consolidado y Limpio para PostgreSQL
--- Versión: 1.6
+-- Versión: 1.7
 -- Fecha de Generación: 2025-11-10
 -- Este script representa la estructura final y autorizada de la base de datos,
 -- incluyendo un modelo de precios escalable y las últimas migraciones.
@@ -256,6 +256,7 @@ CREATE TABLE IF NOT EXISTS Ventas (
     id_cliente INT REFERENCES Clientes(id_cliente),
     id_punto_venta INT REFERENCES Puntos_Venta(id_punto_venta),
     id_trabajador INT REFERENCES Trabajadores(id_trabajador),
+    tipo_venta VARCHAR(50) CHECK (tipo_venta IN ('PRESENCIAL', 'DELIVERY')),
     neto_venta DECIMAL(10, 2),
     iva_venta DECIMAL(10, 2),
     total_bruto_venta DECIMAL(10, 2),
