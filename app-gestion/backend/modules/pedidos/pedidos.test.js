@@ -148,4 +148,80 @@ describe('Pedidos API (Integration)', () => {
     expect(res.body.lugar_entrega).toBe('Direccion Test 3');
     expect(res.body.detalles[0].cantidad).toBe(4);
   });
+
+  it('PUT /pedidos/:id - should update an order', async () => {
+    // First, create an order to update
+    const newOrder = {
+      id_cliente: mockCliente.id_cliente,
+      fecha_agendamiento: '2025-12-28',
+      lugar_entrega: 'Direccion Test 4',
+      tipo_entrega: 'Delivery',
+      observacion: 'Pedido de prueba para PUT',
+      detalles: [
+        {
+          id_formato_producto: mockFormatoProducto.id_formato_producto,
+          cantidad: 5,
+          precio_unitario: 250
+        }
+      ]
+    };
+    const createdOrderRes = await request(app)
+      .post('/api/pedidos')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newOrder);
+    const newOrderId = createdOrderRes.body.id_pedido;
+
+    const updatedData = {
+      estado: 'confirmado',
+      observacion: 'Pedido actualizado'
+    };
+
+    const res = await request(app)
+      .put(`/api/pedidos/${newOrderId}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send(updatedData);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('message', 'Pedido actualizado con éxito.');
+    expect(res.body.pedido.estado).toBe('confirmado');
+    expect(res.body.pedido.observacion).toBe('Pedido actualizado');
+  });
+
+  it('DELETE /pedidos/:id - should delete an order', async () => {
+    // First, create an order to delete
+    const newOrder = {
+      id_cliente: mockCliente.id_cliente,
+      fecha_agendamiento: '2025-12-29',
+      lugar_entrega: 'Direccion Test 5',
+      tipo_entrega: 'Retiro',
+      observacion: 'Pedido de prueba para DELETE',
+      detalles: [
+        {
+          id_formato_producto: mockFormatoProducto.id_formato_producto,
+          cantidad: 6,
+          precio_unitario: 300
+        }
+      ]
+    };
+    const createdOrderRes = await request(app)
+      .post('/api/pedidos')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newOrder);
+    const newOrderId = createdOrderRes.body.id_pedido;
+
+    const res = await request(app)
+      .delete(`/api/pedidos/${newOrderId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('message', 'Pedido eliminado con éxito.');
+
+    // Verify the order was deleted
+    const dbRes = await global.testPool.query('SELECT * FROM Pedidos WHERE id_pedido = $1', [newOrderId]);
+    expect(dbRes.rows.length).toBe(0);
+
+    // Verify the order details were deleted
+    const dbDetailsRes = await global.testPool.query('SELECT * FROM Detalle_Pedidos WHERE id_pedido = $1', [newOrderId]);
+    expect(dbDetailsRes.rows.length).toBe(0);
+  });
 });

@@ -140,10 +140,61 @@ const createPedidoController = (pool) => {
               }
             };
   
-            return {
-              createPedido,
-              getAllPedidos,
-              getPedidoById,
-            };
-          };
-module.exports = createPedidoController;
+                      const updatePedido = async (req, res) => {
+                        const { id } = req.params;
+                        const { estado, observacion } = req.body;
+            
+                        try {
+                          const result = await pool.query(
+                            'UPDATE Pedidos SET estado = $1, observacion = $2 WHERE id_pedido = $3 RETURNING *',
+                            [estado, observacion, id]
+                          );
+            
+                          if (result.rows.length === 0) {
+                            return res.status(404).json({ message: 'Pedido no encontrado para actualizar.' });
+                          }
+                          res.status(200).json({ message: 'Pedido actualizado con éxito.', pedido: result.rows[0] });
+                        } catch (err) {
+                          console.error('Error al actualizar el pedido:', err);
+                          res.status(500).json({ message: 'Internal server error', error: err.message });
+                        }
+                      };
+            
+                      const deletePedido = async (req, res) => {
+                        const { id } = req.params;
+                        const client = await pool.connect();
+            
+                        try {
+                          await client.query('BEGIN');
+            
+                          // 1. Eliminar detalles del pedido
+                          await client.query('DELETE FROM Detalle_Pedidos WHERE id_pedido = $1', [id]);
+            
+                          // 2. Eliminar el pedido principal
+                          const deleteResult = await client.query('DELETE FROM Pedidos WHERE id_pedido = $1 RETURNING *', [id]);
+            
+                          if (deleteResult.rows.length === 0) {
+                            await client.query('ROLLBACK');
+                            return res.status(404).json({ message: 'Pedido no encontrado para eliminar.' });
+                          }
+            
+                          await client.query('COMMIT');
+                          res.status(200).json({ message: 'Pedido eliminado con éxito.' });
+            
+                        } catch (err) {
+                          await client.query('ROLLBACK');
+                          console.error('Error al eliminar el pedido:', err);
+                          res.status(500).json({ message: 'Internal server error', error: err.message });
+                        } finally {
+                          client.release();
+                        }
+                      };
+            
+                      return {
+                        createPedido,
+                        getAllPedidos,
+                        getPedidoById,
+                        updatePedido,
+                        deletePedido,
+                      };
+                    };module.exports = createPedidoController;
