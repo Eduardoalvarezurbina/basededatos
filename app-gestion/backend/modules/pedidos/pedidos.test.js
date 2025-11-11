@@ -83,4 +83,69 @@ describe('Pedidos API (Integration)', () => {
     expect(dbDetailsRes.rows[0].cantidad).toBe("2.00");
     expect(dbDetailsRes.rows[0].precio_unitario).toBe("100.00");
   });
+
+  it('GET /pedidos - should get all orders', async () => {
+    // First, create an order to ensure there is data to fetch
+    const newOrder = {
+      id_cliente: mockCliente.id_cliente,
+      fecha_agendamiento: '2025-12-26',
+      lugar_entrega: 'Direccion Test 2',
+      tipo_entrega: 'Retiro',
+      observacion: 'Pedido de prueba para GET',
+      detalles: [
+        {
+          id_formato_producto: mockFormatoProducto.id_formato_producto,
+          cantidad: 3,
+          precio_unitario: 150
+        }
+      ]
+    };
+    await request(app)
+      .post('/api/pedidos')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newOrder);
+
+    const res = await request(app)
+      .get('/api/pedidos')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThan(0);
+    const foundOrder = res.body.find(order => order.lugar_entrega === 'Direccion Test 2');
+    expect(foundOrder).toBeDefined();
+    expect(foundOrder.detalles[0].cantidad).toBe(3);
+  });
+
+  it('GET /pedidos/:id - should get a single order by ID', async () => {
+    // First, create an order to ensure there is data to fetch
+    const newOrder = {
+      id_cliente: mockCliente.id_cliente,
+      fecha_agendamiento: '2025-12-27',
+      lugar_entrega: 'Direccion Test 3',
+      tipo_entrega: 'Delivery',
+      observacion: 'Pedido de prueba para GET by ID',
+      detalles: [
+        {
+          id_formato_producto: mockFormatoProducto.id_formato_producto,
+          cantidad: 4,
+          precio_unitario: 200
+        }
+      ]
+    };
+    const createdOrderRes = await request(app)
+      .post('/api/pedidos')
+      .set('Authorization', `Bearer ${token}`)
+      .send(newOrder);
+    const newOrderId = createdOrderRes.body.id_pedido;
+
+    const res = await request(app)
+      .get(`/api/pedidos/${newOrderId}`)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('id_pedido', newOrderId);
+    expect(res.body.lugar_entrega).toBe('Direccion Test 3');
+    expect(res.body.detalles[0].cantidad).toBe(4);
+  });
 });

@@ -59,9 +59,91 @@ const createPedidoController = (pool) => {
     }
   };
 
-  return {
-    createPedido,
-  };
-};
-
+            const getAllPedidos = async (req, res) => {
+              try {
+                const result = await pool.query(`
+                  SELECT
+                    p.id_pedido,
+                    p.fecha,
+                    p.fecha_agendamiento,
+                    p.lugar_entrega,
+                    p.tipo_entrega,
+                    p.observacion,
+                    p.estado,
+                    c.nombre AS nombre_cliente,
+                    c.telefono AS telefono_cliente,
+                    json_agg(
+                      json_build_object(
+                        'id_detalle_pedido', dp.id_detalle_pedido,
+                        'id_formato_producto', dp.id_formato_producto,
+                        'cantidad', dp.cantidad,
+                        'precio_unitario', dp.precio_unitario,
+                        'nombre_producto', prod.nombre,
+                        'formato_producto', fp.formato
+                      )
+                    ) AS detalles
+                  FROM Pedidos p
+                  JOIN Clientes c ON p.id_cliente = c.id_cliente
+                  JOIN Detalle_Pedidos dp ON p.id_pedido = dp.id_pedido
+                  JOIN Formatos_Producto fp ON dp.id_formato_producto = fp.id_formato_producto
+                  JOIN Productos prod ON fp.id_producto = prod.id_producto
+                  GROUP BY p.id_pedido, c.nombre, c.telefono
+                  ORDER BY p.fecha_agendamiento DESC;
+                `);
+                res.status(200).json(result.rows);
+              } catch (err) {
+                console.error('Error al obtener todos los pedidos:', err);
+                res.status(500).json({ message: 'Internal server error', error: err.message });
+              }
+            };
+  
+            const getPedidoById = async (req, res) => {
+              const { id } = req.params;
+              try {
+                const result = await pool.query(`
+                  SELECT
+                    p.id_pedido,
+                    p.fecha,
+                    p.fecha_agendamiento,
+                    p.lugar_entrega,
+                    p.tipo_entrega,
+                    p.observacion,
+                    p.estado,
+                    c.nombre AS nombre_cliente,
+                    c.telefono AS telefono_cliente,
+                    json_agg(
+                      json_build_object(
+                        'id_detalle_pedido', dp.id_detalle_pedido,
+                        'id_formato_producto', dp.id_formato_producto,
+                        'cantidad', dp.cantidad,
+                        'precio_unitario', dp.precio_unitario,
+                        'nombre_producto', prod.nombre,
+                        'formato_producto', fp.formato
+                      )
+                    ) AS detalles
+                  FROM Pedidos p
+                  JOIN Clientes c ON p.id_cliente = c.id_cliente
+                  JOIN Detalle_Pedidos dp ON p.id_pedido = dp.id_pedido
+                  JOIN Formatos_Producto fp ON dp.id_formato_producto = fp.id_formato_producto
+                  JOIN Productos prod ON fp.id_producto = prod.id_producto
+                  WHERE p.id_pedido = $1
+                  GROUP BY p.id_pedido, c.nombre, c.telefono;
+                `, [id]);
+  
+                if (result.rows.length === 0) {
+                  return res.status(404).json({ message: 'Pedido no encontrado.' });
+                }
+                res.status(200).json(result.rows[0]);
+              } catch (err) {
+                console.error('Error al obtener pedido por ID:', err);
+                res.status(500).json({ message: 'Internal server error', error: err.message });
+              }
+            };
+  
+            return {
+              createPedido,
+              getAllPedidos,
+              getPedidoById,
+            };
+          };
 module.exports = createPedidoController;

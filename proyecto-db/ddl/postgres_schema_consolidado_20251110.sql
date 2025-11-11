@@ -1,8 +1,8 @@
 -- Esquema Consolidado y Limpio para PostgreSQL
--- Versión: 1.2
+-- Versión: 1.3
 -- Fecha de Generación: 2025-11-10
 -- Este script representa la estructura final y autorizada de la base de datos,
--- sintetizando todas las migraciones previas (hasta la 039 y ajustes finales) en una única fuente de verdad.
+-- sintetizando todas las migraciones previas y las últimas correcciones de consistencia.
 
 -- 1. Tablas de Catálogo (Lookup Tables)
 CREATE TABLE IF NOT EXISTS Regiones (
@@ -205,7 +205,7 @@ CREATE TABLE IF NOT EXISTS Detalle_Compras (
     id_compra INT REFERENCES Compras(id_compra),
     id_formato_producto INT REFERENCES Formatos_Producto(id_formato_producto),
     id_lote INT REFERENCES Lotes_Produccion(id_lote),
-    id_ubicacion INT,
+    id_ubicacion INT REFERENCES Ubicaciones_Inventario(id_ubicacion),
     cantidad DECIMAL(10, 2),
     precio_unitario DECIMAL(10, 2)
 );
@@ -337,6 +337,7 @@ CREATE TABLE IF NOT EXISTS Produccion_Diaria (
     id_formato_producto INT REFERENCES Formatos_Producto(id_formato_producto) NOT NULL,
     id_trabajador INT REFERENCES Trabajadores(id_trabajador),
     id_proceso INT REFERENCES Procesos(id_proceso),
+    id_ubicacion INT REFERENCES Ubicaciones_Inventario(id_ubicacion),
     fecha_jornada DATE NOT NULL DEFAULT CURRENT_DATE,
     etiqueta_inicial INT NOT NULL,
     etiqueta_final INT,

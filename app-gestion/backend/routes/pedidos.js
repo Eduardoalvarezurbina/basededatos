@@ -9,9 +9,10 @@ function createPedidoRoutes(pool, verifyToken, authorizeRole) {
   router.use(verifyToken);
   router.use(authorizeRole(['admin', 'worker']));
 
-  router.post('/', controller.createPedido);
-
-  return router;
-}
-
+            router.post('/', controller.createPedido);
+            router.get('/', controller.getAllPedidos);
+            router.get('/:id', controller.getPedidoById);
+  
+            return router;
+          }
 module.exports = createPedidoRoutes;
