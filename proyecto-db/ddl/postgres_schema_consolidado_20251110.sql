@@ -1,8 +1,8 @@
 -- Esquema Consolidado y Limpio para PostgreSQL
--- Versión: 1.3
+-- Versión: 1.4
 -- Fecha de Generación: 2025-11-10
 -- Este script representa la estructura final y autorizada de la base de datos,
--- sintetizando todas las migraciones previas y las últimas correcciones de consistencia.
+-- incluyendo un modelo de precios escalable.
 
 -- 1. Tablas de Catálogo (Lookup Tables)
 CREATE TABLE IF NOT EXISTS Regiones (
@@ -56,6 +56,11 @@ CREATE TABLE IF NOT EXISTS Clasificaciones_Cliente (
     nombre_clasificacion VARCHAR(100) NOT NULL UNIQUE
 );
 
+CREATE TABLE IF NOT EXISTS Tipos_Precio (
+    id_tipo_precio SERIAL PRIMARY KEY,
+    nombre_tipo_precio VARCHAR(50) NOT NULL UNIQUE
+);
+
 -- 2. Entidades Principales
 CREATE TABLE IF NOT EXISTS Productos (
     id_producto SERIAL PRIMARY KEY,
@@ -68,11 +73,17 @@ CREATE TABLE IF NOT EXISTS Formatos_Producto (
     id_formato_producto SERIAL PRIMARY KEY,
     id_producto INT REFERENCES Productos(id_producto),
     formato VARCHAR(50) NOT NULL,
-    precio_detalle_neto DECIMAL(10, 2),
-    precio_mayorista_neto DECIMAL(10, 2),
     ultimo_costo_neto DECIMAL(10, 2),
     unidad_medida VARCHAR(20),
     CONSTRAINT unique_producto_formato UNIQUE (id_producto, formato)
+);
+
+CREATE TABLE IF NOT EXISTS Precios (
+    id_precio SERIAL PRIMARY KEY,
+    id_formato_producto INT REFERENCES Formatos_Producto(id_formato_producto) ON DELETE CASCADE,
+    id_tipo_precio INT REFERENCES Tipos_Precio(id_tipo_precio) ON DELETE CASCADE,
+    precio_neto DECIMAL(10, 2) NOT NULL,
+    CONSTRAINT uq_precio_producto_tipo UNIQUE (id_formato_producto, id_tipo_precio)
 );
 
 CREATE TABLE IF NOT EXISTS Lotes_Produccion (
@@ -325,11 +336,10 @@ CREATE TABLE IF NOT EXISTS Reclamos (
 CREATE TABLE IF NOT EXISTS Historial_Precios (
     id_historial_precio SERIAL PRIMARY KEY,
     id_formato_producto INT REFERENCES Formatos_Producto(id_formato_producto) NOT NULL,
-    fecha_cambio TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    precio_detalle_neto_anterior DECIMAL(10, 2),
-    precio_detalle_neto_nuevo DECIMAL(10, 2),
-    precio_mayorista_neto_anterior DECIMAL(10, 2),
-    precio_mayorista_neto_nuevo DECIMAL(10, 2)
+    id_tipo_precio INT REFERENCES Tipos_Precio(id_tipo_precio) NOT NULL,
+    precio_neto_anterior DECIMAL(10, 2),
+    precio_neto_nuevo DECIMAL(10, 2) NOT NULL,
+    fecha_cambio TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS Produccion_Diaria (

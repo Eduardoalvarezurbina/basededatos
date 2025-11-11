@@ -15,6 +15,7 @@ const createProduccionRoutes = require('./routes/produccion');
 const createPedidoRoutes = require('./routes/pedidos');
 const createCompraRoutes = require('./routes/compras');
 const createVentaRoutes = require('./routes/ventas');
+const createInventarioRoutes = require('./routes/inventario'); // New import
 const createProduccionController = require('./controllers/produccionController');
 const { verifyToken, authorizeRole } = require('./routes/authMiddleware');
 
@@ -51,6 +52,7 @@ module.exports = (externalPool = null) => { // Accept an optional externalPool
   // app.use('/api/reclamos', createReclamoRoutes(pool));
   app.use('/api/pedidos', createPedidoRoutes(pool, verifyToken, authorizeRole));
   app.use('/api/caja', createCajaRoutes(pool));
+  app.use('/api/inventario', createInventarioRoutes(pool, verifyToken, authorizeRole)); // New route
 
   return { app, pool }; // Return app and the pool (either external or newly created)
 };

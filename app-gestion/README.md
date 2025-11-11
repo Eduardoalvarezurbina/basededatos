@@ -56,6 +56,10 @@ Este es el estado actual del desarrollo, basado en la hoja de ruta que definimos
     *   **ESTADO:** HECHO.
     *   **CONTEXTO:** Se implementó la gestión completa de reclamos, incluyendo la visualización del historial, registro de nuevos reclamos asociados a clientes y ventas, y la capacidad de actualizar su estado y solución.
 
+*   **Paso 2.6: Módulo de Inventario:**
+    *   **ESTADO:** HECHO.
+    *   **CONTEXTO:** Se implementó la API para la transferencia de inventario entre ubicaciones, permitiendo registrar el movimiento de stock y manteniendo la integridad de los datos.
+
 ### **Fase 3: Autenticación y Vistas por Rol**
 
 **ESTADO: PENDIENTE**
