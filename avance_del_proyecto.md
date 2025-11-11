@@ -90,6 +90,7 @@ Esto proporciona una red de seguridad fundamental para el desarrollo futuro.
 - [x] Implementación del módulo de gestión de inventario (CRUD).
   - **Implementación de Transferencia de Inventario:** Se añadió el endpoint `POST /api/inventario/transferir` para gestionar la transferencia de productos entre distintas ubicaciones. Este endpoint decrementa el stock en la ubicación de origen, incrementa el stock en la ubicación de destino y registra los movimientos de inventario correspondientes para 'transferencia_salida' y 'transferencia_entrada'. La operación se realiza dentro de una transacción para asegurar la integridad de los datos.
   - **Preparación para Transformaciones Complejas (Cambio de Esquema DB):** Se creó la migración DDL `042_alter_procesos_for_multiple_outputs.sql` para modificar la estructura de la base de datos. Esta migración crea la tabla `Detalle_Procesos_Salida` para permitir múltiples productos de salida por proceso y elimina la columna `id_formato_producto_final` de la tabla `Procesos`.
+  - **Ajuste de Restricción de Proceso:** Se creó la migración DDL `043_add_complejo_to_procesos_tipo_proceso.sql` para añadir 'COMPLEJO' como un tipo de proceso válido en la tabla `Procesos`, permitiendo así la definición de procesos de transformación más complejos.
 - [ ] Implementación del módulo de gestión de lotes (CRUD).
 - [ ] Implementación del módulo de gestión de reclamos (CRUD).
 

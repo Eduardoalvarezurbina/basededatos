@@ -1,5 +1,5 @@
 -- Esquema Consolidado y Limpio para PostgreSQL
--- Versión: 1.5
+-- Versión: 1.6
 -- Fecha de Generación: 2025-11-10
 -- Este script representa la estructura final y autorizada de la base de datos,
 -- incluyendo un modelo de precios escalable y las últimas migraciones.
@@ -208,7 +208,8 @@ CREATE TABLE IF NOT EXISTS Compras (
     iva DECIMAL(10, 2),
     total DECIMAL(10, 2),
     observacion TEXT,
-    con_factura BOOLEAN DEFAULT FALSE
+    con_factura BOOLEAN DEFAULT FALSE,
+    afecta_inventario_fisico BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE IF NOT EXISTS Detalle_Compras (
